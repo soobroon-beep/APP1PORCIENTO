@@ -1383,6 +1383,19 @@ body.sky-night::before{background:
       font-family:var(--font-mono);font-size:14px;outline:none;
       box-sizing:border-box;margin-bottom:12px;
     " autocapitalize="sentences" spellcheck="true" />
+    <div style="margin-bottom:14px;">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Color del proyecto</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="proy-modal-colors">
+        <div class="proy-modal-color-dot sel" data-c="#42f5c8" style="width:28px;height:28px;border-radius:50%;background:#42f5c8;cursor:pointer;border:3px solid #fff;box-shadow:0 0 8px #42f5c8;"></div>
+        <div class="proy-modal-color-dot" data-c="#c8f542" style="width:28px;height:28px;border-radius:50%;background:#c8f542;cursor:pointer;border:3px solid transparent;"></div>
+        <div class="proy-modal-color-dot" data-c="#a78bfa" style="width:28px;height:28px;border-radius:50%;background:#a78bfa;cursor:pointer;border:3px solid transparent;"></div>
+        <div class="proy-modal-color-dot" data-c="#f5a742" style="width:28px;height:28px;border-radius:50%;background:#f5a742;cursor:pointer;border:3px solid transparent;"></div>
+        <div class="proy-modal-color-dot" data-c="#f54242" style="width:28px;height:28px;border-radius:50%;background:#f54242;cursor:pointer;border:3px solid transparent;"></div>
+        <div class="proy-modal-color-dot" data-c="#4287f5" style="width:28px;height:28px;border-radius:50%;background:#4287f5;cursor:pointer;border:3px solid transparent;"></div>
+        <div class="proy-modal-color-dot" data-c="#f542c8" style="width:28px;height:28px;border-radius:50%;background:#f542c8;cursor:pointer;border:3px solid transparent;"></div>
+        <div class="proy-modal-color-dot" data-c="#ffffff" style="width:28px;height:28px;border-radius:50%;background:#ffffff;cursor:pointer;border:3px solid transparent;"></div>
+      </div>
+    </div>
     <button onclick="crearProyecto()" id="proy-crear-btn" style="
       width:100%;background:rgba(66,245,200,.15);border:1px solid rgba(66,245,200,.4);
       color:var(--accent2);font-family:var(--font-mono);font-size:13px;
@@ -5834,6 +5847,23 @@ document.getElementById('proy-modal-ov').addEventListener('click', function(e){
   if(e.target === this) cerrarModalProyecto();
 });
 
+// Color dots in new project modal
+document.getElementById('proy-modal-colors').addEventListener('click', function(e){
+  const dot = e.target.closest('.proy-modal-color-dot');
+  if(!dot) return;
+  this.querySelectorAll('.proy-modal-color-dot').forEach(d=>{
+    d.classList.remove('sel');
+    d.style.border='3px solid transparent';
+    d.style.boxShadow='none';
+  });
+  dot.classList.add('sel');
+  dot.style.border='3px solid #fff';
+  dot.style.boxShadow='0 0 10px '+dot.dataset.c;
+  // Update crear button border color
+  const btn=document.getElementById('proy-crear-btn');
+  if(btn){ btn.style.background='rgba(0,0,0,0)'; btn.style.borderColor=dot.dataset.c+'88'; btn.style.color=dot.dataset.c; }
+});
+
 // ── Crear proyecto ──
 function crearProyecto(){
   const nombre = document.getElementById('proy-nombre-inp').value.trim();
@@ -5893,6 +5923,8 @@ function buildProyCard(proy){
   const card = document.createElement('div');
   card.className = 'proy-card';
   card.id = 'pcard-' + proy.id;
+  const cardColor = proy.color || '#42f5c8';
+  card.style.setProperty('--proy-color', cardColor);
 
   // ─ Header — solo toggle, título NO editable al tap ─
   const head = document.createElement('div');
@@ -5917,7 +5949,7 @@ function buildProyCard(proy){
   titleEl.className = 'proy-card-title';
   titleEl.id = 'ptitle-' + proy.id;
   titleEl.textContent = proy.nombre;
-  titleEl.style.cssText = 'flex:1;min-width:0;font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;';
+  titleEl.style.cssText = 'flex:1;min-width:0;font-family:var(--font-head);font-size:14px;font-weight:700;color:'+cardColor+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;';
 
   const pctEl = document.createElement('div');
   pctEl.className = 'proy-card-pct';
@@ -6018,6 +6050,7 @@ function buildProyCard(proy){
   barFill.className = 'proy-progbar-fill';
   barFill.id = 'pbar-' + proy.id;
   barFill.style.width = pct + '%';
+  barFill.style.background = cardColor;
   barWrap.appendChild(barFill);
   card.appendChild(barWrap);
 
@@ -6109,6 +6142,56 @@ function buildProyCard(proy){
     }, 900);
   });
   body.appendChild(ta);
+
+  // ─ Selector de color ─
+  const colorLbl = document.createElement('div');
+  colorLbl.className = 'proy-section-lbl';
+  colorLbl.style.marginTop = '16px';
+  colorLbl.textContent = 'Color';
+  body.appendChild(colorLbl);
+
+  const colorRow = document.createElement('div');
+  colorRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;';
+  const PCOLORS = ['#42f5c8','#c8f542','#a78bfa','#f5a742','#f54242','#4287f5','#f542c8','#ffffff'];
+  PCOLORS.forEach(c => {
+    const dot = document.createElement('div');
+    const isActive = c === cardColor;
+    dot.style.cssText = 'width:26px;height:26px;border-radius:50%;background:'+c+';cursor:pointer;flex-shrink:0;'
+      +'border:3px solid '+(isActive?'#fff':'rgba(255,255,255,0.1)')+';'
+      +'box-shadow:'+(isActive?'0 0 8px '+c:'none')+';'
+      +'transition:transform .12s,box-shadow .12s;';
+    dot.addEventListener('mouseover', () => { dot.style.transform='scale(1.2)'; dot.style.boxShadow='0 0 8px '+c; });
+    dot.addEventListener('mouseout', () => {
+      dot.style.transform='scale(1)';
+      const p = proyectos.find(x=>x.id===proy.id);
+      const cur = p?p.color:'#42f5c8';
+      dot.style.boxShadow = c===cur?'0 0 8px '+c:'none';
+    });
+    dot.addEventListener('click', e => {
+      e.stopPropagation();
+      const p = proyectos.find(x => x.id === proy.id);
+      if(!p) return;
+      p.color = c;
+      saveProyectos();
+      // Update card visuals live
+      const cardEl = document.getElementById('pcard-' + proy.id);
+      if(cardEl){
+        cardEl.style.setProperty('--proy-color', c);
+        const tEl = document.getElementById('ptitle-' + proy.id);
+        if(tEl) tEl.style.color = c;
+        const bEl = document.getElementById('pbar-' + proy.id);
+        if(bEl) bEl.style.background = c;
+      }
+      // Update dot borders in this row
+      colorRow.querySelectorAll('div').forEach(d => {
+        const dc = d.style.background;
+        d.style.border = '3px solid '+(d.style.background===c?'#fff':'rgba(255,255,255,0.1)');
+        d.style.boxShadow = d.style.background===c?'0 0 8px '+c:'none';
+      });
+    });
+    colorRow.appendChild(dot);
+  });
+  body.appendChild(colorRow);
 
   // Botón eliminar
   const delBtn = document.createElement('button');
@@ -6339,7 +6422,11 @@ window.addEventListener('resize', function(){
 .proy-card{
   background:var(--surface);border:1px solid var(--border);
   border-radius:13px;overflow:hidden;transition:border-color .2s;
+  border-left:4px solid var(--proy-color, var(--border));
 }
+.proy-modal-color-dot{ transition:transform .12s,box-shadow .12s; }
+.proy-modal-color-dot:hover{ transform:scale(1.2); }
+.proy-modal-color-dot.sel{ border-color:#fff !important; }
 .proy-card-head{
   padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;
   -webkit-tap-highlight-color:transparent;
