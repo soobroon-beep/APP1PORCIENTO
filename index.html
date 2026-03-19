@@ -3217,18 +3217,67 @@ db.collection("appData").doc("proyectos").onSnapshot((doc) => {
 });
 function renderProjs(){
   const g=document.getElementById('proj-grid');if(!g)return;g.innerHTML='';
-  const PROJ_COLORS = ['#c8f542','#42f5c8','#a78bfa','#f5a742','#f54242','#4287f5','#f542c8','#ffffff'];
+  const PROJ_COLORS = [
+    {c:'#c8f542',n:'Verde'},{c:'#42f5c8',n:'Teal'},{c:'#a78bfa',n:'Morado'},
+    {c:'#f5a742',n:'Naranja'},{c:'#f54242',n:'Rojo'},{c:'#4287f5',n:'Azul'},
+    {c:'#f542c8',n:'Rosa'},{c:'#ffffff',n:'Blanco'}
+  ];
   projs.forEach((p,i)=>{
     const col = p.c || '#a78bfa';
-    const el=document.createElement('div');el.className='proj-card';
-    el.style.cssText=`position:relative;border-left:3px solid ${col};`;
-    const colorOpts = PROJ_COLORS.map(c=>`<div onclick="setProjColor(${i},'${c}')" style="width:14px;height:14px;border-radius:50%;background:${c};cursor:pointer;flex-shrink:0;border:2px solid ${c===col?'#fff':'transparent'};transition:transform .15s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>`).join('');
-    el.innerHTML=`
-      <button onclick="deleteProj(${i})" style="position:absolute;top:6px;right:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;opacity:0.5;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'" title="Eliminar">✕</button>
-      <div class="proj-title" contenteditable="true" spellcheck="false" onblur="editProj(${i},'t',this.textContent)" style="outline:none;cursor:text;padding-right:20px;color:${col};">${p.t}</div>
-      <div class="proj-desc" contenteditable="true" spellcheck="false" onblur="editProj(${i},'d',this.textContent)" style="outline:none;cursor:text;">${p.d}</div>
-      <span class="proj-tag" contenteditable="true" spellcheck="false" onblur="editProj(${i},'g',this.textContent)" style="outline:none;cursor:text;border-color:${col}33;color:${col};background:${col}11;">${p.g}</span>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);">${colorOpts}</div>`;
+    const el=document.createElement('div');
+    el.className='proj-card';
+    el.style.cssText='position:relative;border-left:4px solid '+col+';padding-bottom:14px;';
+
+    // Build color dots using DOM (avoids contenteditable interference)
+    const colorBar = document.createElement('div');
+    colorBar.style.cssText='display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px solid var(--border);align-items:center;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText='font-size:8px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-right:2px;flex-shrink:0;';
+    lbl.textContent='Color';
+    colorBar.appendChild(lbl);
+    PROJ_COLORS.forEach(({c,n})=>{
+      const dot = document.createElement('div');
+      const isActive = c===col;
+      dot.title=n;
+      dot.style.cssText='width:20px;height:20px;border-radius:50%;background:'+c+';cursor:pointer;flex-shrink:0;'
+        +'border:2.5px solid '+(isActive?'#fff':'rgba(255,255,255,0.12)')+';'
+        +'box-shadow:'+(isActive?'0 0 7px '+c:'none')+';'
+        +'transition:transform .12s,box-shadow .12s;';
+      dot.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        setProjColor(i, c);
+      });
+      dot.addEventListener('mouseover', function(){ this.style.transform='scale(1.25)'; this.style.boxShadow='0 0 8px '+c; });
+      dot.addEventListener('mouseout', function(){ this.style.transform='scale(1)'; this.style.boxShadow=isActive?'0 0 7px '+c:'none'; });
+      colorBar.appendChild(dot);
+    });
+
+    el.innerHTML=
+      '<button id="del-proj-'+i+'" style="position:absolute;top:6px;right:7px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;opacity:0.5;" title="Eliminar">✕</button>'
+      +'<div class="proj-title" contenteditable="true" spellcheck="false" style="outline:none;cursor:text;padding-right:20px;color:'+col+';margin-bottom:4px;">'+p.t+'</div>'
+      +'<div class="proj-desc" contenteditable="true" spellcheck="false" style="outline:none;cursor:text;margin-bottom:7px;">'+p.d+'</div>'
+      +'<span class="proj-tag" contenteditable="true" spellcheck="false" style="outline:none;cursor:text;border-color:'+col+'44;color:'+col+';background:'+col+'15;">'+p.g+'</span>';
+
+    el.appendChild(colorBar);
+
+    // Wire up delete button safely
+    const delBtn = el.querySelector('#del-proj-'+i);
+    if(delBtn){
+      delBtn.addEventListener('mousedown', function(e){ e.preventDefault(); e.stopPropagation(); });
+      delBtn.addEventListener('click', function(){ deleteProj(i); });
+      delBtn.addEventListener('mouseover', function(){ this.style.opacity='1'; });
+      delBtn.addEventListener('mouseout', function(){ this.style.opacity='0.5'; });
+    }
+
+    // Wire up contenteditable onblur via JS
+    const titleEl = el.querySelector('.proj-title');
+    const descEl  = el.querySelector('.proj-desc');
+    const tagEl   = el.querySelector('.proj-tag');
+    if(titleEl) titleEl.addEventListener('blur', function(){ editProj(i,'t',this.textContent); });
+    if(descEl)  descEl.addEventListener('blur',  function(){ editProj(i,'d',this.textContent); });
+    if(tagEl)   tagEl.addEventListener('blur',   function(){ editProj(i,'g',this.textContent); });
+
     g.appendChild(el);
   });
 }
