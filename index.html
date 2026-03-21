@@ -1345,17 +1345,29 @@ body.sky-night::before{background:
 </div>
 
 <div class="section" style="margin-top:18px;">
-  <!-- Botón nuevo proyecto -->
-  <button onclick="abrirModalProyecto()" style="
-    width:100%;background:rgba(66,245,200,.08);border:1px dashed rgba(66,245,200,.3);
-    color:var(--accent2);font-family:var(--font-mono);font-size:11px;
-    padding:11px;border-radius:10px;cursor:pointer;margin-bottom:14px;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    transition:all .2s;
-  ">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Nuevo proyecto
-  </button>
+  <!-- Botones: nuevo proyecto + separador -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <button onclick="abrirModalProyecto()" style="
+      flex:1;background:rgba(66,245,200,.08);border:1px dashed rgba(66,245,200,.3);
+      color:var(--accent2);font-family:var(--font-mono);font-size:11px;
+      padding:11px;border-radius:10px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      transition:all .2s;
+    ">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo proyecto
+    </button>
+    <button onclick="agregarSeparador()" style="
+      background:rgba(167,139,250,.08);border:1px dashed rgba(167,139,250,.3);
+      color:var(--purple);font-family:var(--font-mono);font-size:11px;
+      padding:11px 16px;border-radius:10px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+      transition:all .2s;white-space:nowrap;
+    ">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="10" y2="6"/><line x1="3" y1="18" x2="10" y2="18"/></svg>
+      Sección
+    </button>
+  </div>
 
   <!-- Grid de proyectos -->
   <div id="proyectos-grid" style="display:flex;flex-direction:column;gap:10px;"></div>
@@ -5913,11 +5925,185 @@ function renderProyectos(){
   }
   vacio.style.display = 'none';
   proyectos.forEach(p => {
-    grid.appendChild(buildProyCard(p));
+    if(p.tipo === 'separador'){
+      grid.appendChild(buildSeparadorEl(p));
+    } else {
+      grid.appendChild(buildProyCard(p));
+    }
   });
 }
 
 // ── Construir tarjeta de un proyecto ──
+// ── DRAG UNIFICADO para proyectos Y separadores ──────────────────────────────
+// attachItemDrag(cardEl, itemId, labelText, [handleEl])
+// Si handleEl se pasa: solo ese elemento activa el drag (long-press en separadores)
+// Si no: long-press en cualquier parte de la card (proyectos)
+function attachItemDrag(card, itemId, labelText, handleEl){
+  let _lpTimer = null;
+  let _dragging = false;
+  let _ghost = null;
+  let _indicator = null; // línea indicadora de posición
+
+  const triggerEl = handleEl || card;
+
+  function allItems(){
+    const grid = document.getElementById('proyectos-grid');
+    if(!grid) return [];
+    return Array.from(grid.children); // todos los items en orden DOM
+  }
+
+  function clearHighlights(){
+    allItems().forEach(c => {
+      c.style.background = '';
+      c.style.outline = '';
+    });
+    if(_indicator && _indicator.parentNode) _indicator.parentNode.removeChild(_indicator);
+    _indicator = null;
+  }
+
+  function getItemUnder(x, y){
+    if(_ghost) _ghost.style.display = 'none';
+    const el = document.elementFromPoint(x, y);
+    if(_ghost) _ghost.style.display = '';
+    if(!el) return null;
+    // buscar el item raíz del grid
+    const grid = document.getElementById('proyectos-grid');
+    if(!grid) return null;
+    let node = el;
+    while(node && node.parentElement !== grid) node = node.parentElement;
+    if(!node || node === card) return null;
+    return node;
+  }
+
+  function showIndicator(overEl, y){
+    clearHighlights();
+    if(!_indicator){
+      _indicator = document.createElement('div');
+      _indicator.style.cssText = 'height:2px;border-radius:99px;background:var(--accent2);pointer-events:none;margin:2px 0;transition:none;';
+    }
+    const r = overEl.getBoundingClientRect();
+    const mid = r.top + r.height / 2;
+    const grid = document.getElementById('proyectos-grid');
+    if(y < mid){
+      grid.insertBefore(_indicator, overEl);
+    } else {
+      grid.insertBefore(_indicator, overEl.nextSibling);
+    }
+    overEl.style.outline = '1px solid rgba(66,245,200,0.2)';
+  }
+
+  triggerEl.addEventListener('touchstart', function(e){
+    if(!handleEl && (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    _dragging = false;
+    const t0 = e.touches[0];
+    _lpTimer = setTimeout(function(){
+      _dragging = true;
+      if(navigator.vibrate) navigator.vibrate(40);
+      card.style.opacity = '0.45';
+      card.style.transform = 'scale(1.02)';
+      _ghost = document.createElement('div');
+      _ghost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;'
+        + 'background:var(--surface);border:2px solid var(--accent2);'
+        + 'border-radius:10px;padding:9px 16px;font-size:12px;'
+        + 'font-family:var(--font-mono);color:var(--accent2);'
+        + 'max-width:75vw;box-shadow:0 8px 32px rgba(0,0,0,0.7);'
+        + 'display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      _ghost.innerHTML = '<span style="opacity:.5;font-size:14px;">⠿</span><span>' + (labelText || '').slice(0, 35) + '</span>';
+      _ghost.style.left = (t0.clientX - 20) + 'px';
+      _ghost.style.top  = (t0.clientY - 20) + 'px';
+      document.body.appendChild(_ghost);
+    }, 380);
+  }, {passive: true});
+
+  triggerEl.addEventListener('touchmove', function(e){
+    if(!_dragging || !_ghost){ clearTimeout(_lpTimer); return; }
+    e.preventDefault();
+    const touch = e.touches[0];
+    _ghost.style.left = (touch.clientX - 20) + 'px';
+    _ghost.style.top  = (touch.clientY - 20) + 'px';
+    const over = getItemUnder(touch.clientX, touch.clientY);
+    if(over) showIndicator(over, touch.clientY);
+    else clearHighlights();
+  }, {passive: false});
+
+  triggerEl.addEventListener('touchend', function(e){
+    clearTimeout(_lpTimer);
+    clearHighlights();
+    if(_ghost){ document.body.removeChild(_ghost); _ghost = null; }
+    card.style.opacity = '1';
+    card.style.transform = '';
+    if(!_dragging){ _dragging = false; return; }
+    _dragging = false;
+
+    const touch = e.changedTouches[0];
+    const over = getItemUnder(touch.clientX, touch.clientY);
+    if(!over){ return; }
+
+    doReorder(over, touch.clientY);
+  });
+
+  // ── Mouse drag (desktop) ──
+  triggerEl.addEventListener('mousedown', function(e){
+    if(e.button !== 0) return;
+    if(!handleEl && (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    e.preventDefault();
+    _dragging = true;
+    card.style.opacity = '0.45';
+    card.style.cursor = 'grabbing';
+    _ghost = document.createElement('div');
+    _ghost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;'
+      + 'background:var(--surface);border:2px solid var(--accent2);'
+      + 'border-radius:10px;padding:9px 16px;font-size:12px;'
+      + 'font-family:var(--font-mono);color:var(--accent2);'
+      + 'max-width:75vw;box-shadow:0 8px 32px rgba(0,0,0,0.7);'
+      + 'display:flex;align-items:center;gap:8px;white-space:nowrap;';
+    _ghost.innerHTML = '<span style="opacity:.5;font-size:14px;">⠿</span><span>' + (labelText || '').slice(0, 35) + '</span>';
+    _ghost.style.left = (e.clientX - 20) + 'px';
+    _ghost.style.top  = (e.clientY - 20) + 'px';
+    document.body.appendChild(_ghost);
+
+    function onMouseMove(ev){
+      if(!_dragging) return;
+      _ghost.style.left = (ev.clientX - 20) + 'px';
+      _ghost.style.top  = (ev.clientY - 20) + 'px';
+      const over = getItemUnder(ev.clientX, ev.clientY);
+      if(over) showIndicator(over, ev.clientY);
+      else clearHighlights();
+    }
+    function onMouseUp(ev){
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      clearHighlights();
+      if(_ghost){ document.body.removeChild(_ghost); _ghost = null; }
+      card.style.opacity = '1';
+      card.style.cursor = '';
+      if(!_dragging){ _dragging = false; return; }
+      _dragging = false;
+      const over = getItemUnder(ev.clientX, ev.clientY);
+      if(over) doReorder(over, ev.clientY);
+    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+
+  function doReorder(over, clientY){
+    const r = over.getBoundingClientRect();
+    const insertBefore = clientY < r.top + r.height / 2;
+    const fromId = itemId;
+    const toIdStr = over.id.replace('pcard-','');
+    const toId = parseInt(toIdStr) || toIdStr;
+    const fromIdx = proyectos.findIndex(p => p.id === fromId);
+    let toIdx = proyectos.findIndex(p => p.id === toId);
+    if(fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    const moved = proyectos.splice(fromIdx, 1)[0];
+    toIdx = proyectos.findIndex(p => p.id === toId);
+    const insertAt = insertBefore ? toIdx : toIdx + 1;
+    proyectos.splice(insertAt, 0, moved);
+    saveProyectos();
+    renderProyectos();
+  }
+}
+
 function buildProyCard(proy){
   const pct = calcProg(proy);
   const card = document.createElement('div');
@@ -5931,11 +6117,13 @@ function buildProyCard(proy){
   head.className = 'proy-card-head';
   head.style.cssText = 'padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;-webkit-tap-highlight-color:transparent;user-select:none;';
 
-  // Drag handle (muestra ⠿ como indicador)
+  // Drag handle (⠿ — área táctil grande para móvil)
   const dragHandle = document.createElement('div');
-  dragHandle.style.cssText = 'font-size:14px;color:var(--muted);opacity:0.4;flex-shrink:0;cursor:grab;line-height:1;padding:2px 0;';
+  dragHandle.style.cssText = 'font-size:15px;color:var(--muted);opacity:0.35;flex-shrink:0;cursor:grab;line-height:1;padding:6px 4px;margin:-2px 0;border-radius:5px;transition:opacity .15s,background .15s;-webkit-tap-highlight-color:transparent;';
   dragHandle.textContent = '⠿';
-  dragHandle.title = 'Mantén presionado para mover';
+  dragHandle.title = 'Mantén para mover';
+  dragHandle.addEventListener('mouseenter', () => { dragHandle.style.opacity='0.8'; dragHandle.style.background='rgba(255,255,255,0.06)'; });
+  dragHandle.addEventListener('mouseleave', () => { dragHandle.style.opacity='0.35'; dragHandle.style.background=''; });
 
   const chevron = document.createElement('svg');
   chevron.setAttribute('viewBox','0 0 24 24');
@@ -5972,87 +6160,11 @@ function buildProyCard(proy){
   });
   card.appendChild(head);
 
-  // ─ Long-press drag para reordenar (igual que notas) ─
-  (function attachProyDrag(card, proy){
-    let _lpTimer = null;
-    let _dragging = false;
-    let _ghost = null;
+  // ─ Drag unificado desde el handle ⠿ ─
+  attachItemDrag(card, proy.id, proy.nombre, dragHandle);
 
-    card.addEventListener('touchstart', function(e){
-      if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      _dragging = false;
-      _lpTimer = setTimeout(function(){
-        _dragging = true;
-        if(navigator.vibrate) navigator.vibrate(40);
-        card.style.opacity = '0.5';
-        card.style.transform = 'scale(1.02)';
-        // Ghost visual
-        _ghost = document.createElement('div');
-        _ghost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;background:var(--surface);border:2px solid var(--accent2);border-radius:12px;padding:12px 16px;font-size:13px;font-family:var(--font-head);font-weight:700;color:var(--text);max-width:80vw;box-shadow:0 8px 32px rgba(0,0,0,0.6);';
-        _ghost.textContent = proy.nombre;
-        const r = card.getBoundingClientRect();
-        _ghost.style.left = r.left + 'px';
-        _ghost.style.top = r.top + 'px';
-        document.body.appendChild(_ghost);
-      }, 400);
-    }, {passive: true});
-
-    card.addEventListener('touchmove', function(e){
-      if(!_dragging || !_ghost){ clearTimeout(_lpTimer); return; }
-      e.preventDefault();
-      const touch = e.touches[0];
-      _ghost.style.left = (touch.clientX - 20) + 'px';
-      _ghost.style.top  = (touch.clientY - 30) + 'px';
-      // Resaltar tarjeta debajo
-      const grid = document.getElementById('proyectos-grid');
-      if(grid) grid.querySelectorAll('.proy-card').forEach(c => c.style.background = '');
-      _ghost.style.display = 'none';
-      const under = document.elementFromPoint(touch.clientX, touch.clientY);
-      _ghost.style.display = '';
-      const overCard = under && under.closest('.proy-card');
-      if(overCard && overCard !== card){
-        overCard.style.background = 'rgba(66,245,200,0.07)';
-      }
-    }, {passive: false});
-
-    card.addEventListener('touchend', function(e){
-      clearTimeout(_lpTimer);
-      if(_ghost){ document.body.removeChild(_ghost); _ghost = null; }
-      card.style.opacity = '1';
-      card.style.transform = '';
-      const grid = document.getElementById('proyectos-grid');
-      if(grid) grid.querySelectorAll('.proy-card').forEach(c => c.style.background = '');
-      if(!_dragging){ _dragging = false; return; }
-      const touch = e.changedTouches[0];
-      const under = document.elementFromPoint(touch.clientX, touch.clientY);
-      const overCard = under && under.closest('.proy-card');
-      if(overCard && overCard !== card){
-        const fromId = proy.id;
-        const toIdStr = overCard.id.replace('pcard-','');
-        const toId = parseInt(toIdStr) || toIdStr;
-        const fromIdx = proyectos.findIndex(p => p.id === fromId);
-        const toIdx   = proyectos.findIndex(p => p.id === toId);
-        if(fromIdx !== -1 && toIdx !== -1){
-          const moved = proyectos.splice(fromIdx, 1)[0];
-          proyectos.splice(toIdx, 0, moved);
-          saveProyectos();
-          renderProyectos();
-        }
-      }
-      _dragging = false;
-    });
-  })(card, proy);
-
-  // ─ Barra de progreso ─
-  const barWrap = document.createElement('div');
-  barWrap.className = 'proy-progbar-wrap';
-  const barFill = document.createElement('div');
-  barFill.className = 'proy-progbar-fill';
-  barFill.id = 'pbar-' + proy.id;
-  barFill.style.width = pct + '%';
-  barFill.style.background = cardColor;
-  barWrap.appendChild(barFill);
-  card.appendChild(barWrap);
+  // ─ Barra de progreso — OCULTA ─
+  // (removida por diseño)
 
   // ─ Body (colapsable) ─
   const body = document.createElement('div');
@@ -6330,6 +6442,83 @@ function eliminarProyecto(id){
   saveProyectos();
 }
 
+// ── SEPARADORES DE SECCIÓN ──────────────────────────────────────────────────
+function agregarSeparador(){
+  const sep = {
+    id: Date.now(),
+    tipo: 'separador',
+    nombre: 'Nueva sección',
+    creadoEn: new Date().toISOString(),
+  };
+  proyectos.push(sep);
+  const grid = document.getElementById('proyectos-grid');
+  const vacio = document.getElementById('proyectos-vacio');
+  const el = buildSeparadorEl(sep);
+  grid.appendChild(el);
+  if(vacio) vacio.style.display = 'none';
+  saveProyectos();
+  setTimeout(() => {
+    const inp = document.getElementById('sep-inp-' + sep.id);
+    if(inp){ inp.focus(); inp.select(); }
+  }, 80);
+}
+
+function buildSeparadorEl(sep){
+  const wrap = document.createElement('div');
+  wrap.id = 'pcard-' + sep.id;
+  wrap.className = 'proy-sep';
+
+  // Handle de arrastre
+  const handle = document.createElement('div');
+  handle.className = 'proy-sep-handle';
+  handle.textContent = '⠿';
+  handle.title = 'Mantén para mover';
+
+  const line1 = document.createElement('div');
+  line1.className = 'proy-sep-line';
+
+  const inp = document.createElement('input');
+  inp.id = 'sep-inp-' + sep.id;
+  inp.type = 'text';
+  inp.value = sep.nombre;
+  inp.maxLength = 40;
+  inp.className = 'proy-sep-inp';
+  inp.setAttribute('autocapitalize','sentences');
+  inp.spellcheck = false;
+  inp.addEventListener('blur', () => {
+    const nuevo = inp.value.trim() || 'Sección';
+    inp.value = nuevo;
+    const s = proyectos.find(x => x.id === sep.id);
+    if(s){ s.nombre = nuevo; saveProyectos(); }
+  });
+  inp.addEventListener('keydown', e => { if(e.key==='Enter') inp.blur(); });
+
+  const line2 = document.createElement('div');
+  line2.className = 'proy-sep-line';
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'proy-sep-del';
+  delBtn.title = 'Eliminar sección';
+  delBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  delBtn.addEventListener('click', () => {
+    if(!confirm('¿Eliminar esta sección?')) return;
+    proyectos = proyectos.filter(p => p.id !== sep.id);
+    wrap.remove();
+    saveProyectos();
+  });
+
+  wrap.appendChild(handle);
+  wrap.appendChild(line1);
+  wrap.appendChild(inp);
+  wrap.appendChild(line2);
+  wrap.appendChild(delBtn);
+
+  // Drag unificado desde el handle
+  attachItemDrag(wrap, sep.id, sep.nombre, handle);
+
+  return wrap;
+}
+
 // ── Escape HTML helper ──
 function escHtml(s){
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -6528,6 +6717,43 @@ window.addEventListener('resize', function(){
   transition:all .2s;
 }
 .proy-del-btn:active{ background:rgba(255,60,60,.1);color:rgba(255,100,100,.9); }
+
+/* ── SEPARADORES DE SECCIÓN ── */
+.proy-sep{
+  display:flex;align-items:center;gap:8px;padding:8px 0;
+  position:relative;user-select:none;
+}
+.proy-sep-handle{
+  font-size:14px;color:rgba(167,139,250,.5);cursor:grab;
+  flex-shrink:0;padding:4px 6px;border-radius:5px;
+  transition:color .15s,background .15s;line-height:1;
+  -webkit-tap-highlight-color:transparent;
+}
+.proy-sep:hover .proy-sep-handle{ color:var(--purple);background:rgba(167,139,250,.1); }
+.proy-sep-handle:active{ cursor:grabbing;color:var(--purple); }
+.proy-sep-line{
+  flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(167,139,250,0.3),transparent);
+}
+.proy-sep-inp{
+  background:none;border:none;outline:none;
+  color:var(--purple);font-family:var(--font-mono);font-size:9px;
+  letter-spacing:.18em;text-transform:uppercase;font-weight:600;
+  text-align:center;width:auto;min-width:60px;max-width:180px;
+  padding:3px 8px;border-radius:5px;cursor:text;
+  transition:background .15s;
+}
+.proy-sep-inp:hover,.proy-sep-inp:focus{
+  background:rgba(167,139,250,.09);
+}
+.proy-sep-del{
+  position:absolute;right:0;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:rgba(167,139,250,.3);cursor:pointer;
+  padding:5px;border-radius:4px;line-height:1;
+  opacity:0;transition:opacity .15s,color .15s;display:flex;
+}
+.proy-sep:hover .proy-sep-del{ opacity:1; }
+.proy-sep-del:hover{ color:var(--red); }
 
 #welcome-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);
   backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:20px;}
