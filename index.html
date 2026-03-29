@@ -446,6 +446,18 @@ body.sky-night::before{background:
 .cal-day{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);position:relative;cursor:default;}
 .cal-day.today{color:var(--accent);font-weight:700;border:1px solid rgba(200,245,66,.3);background:rgba(200,245,66,.06);}
 .cal-day.has-data{cursor:pointer;}
+.cal-day.has-data:hover{filter:brightness(1.2);transform:scale(1.08);transition:all .15s;}
+
+/* Widget proyectos compacto */
+.pw-item{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;user-select:none;}
+.pw-item:hover{border-color:var(--accent2);background:rgba(66,245,200,.04);}
+.pw-item.pw-done{opacity:.5;background:rgba(200,245,66,.03);border-color:rgba(200,245,66,.15);}
+.pw-item.pw-done .pw-task-name{text-decoration:line-through;color:var(--muted);}
+.pw-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.pw-item.pw-done .pw-cb{background:var(--accent);border-color:var(--accent);}
+.pw-proj-name{font-size:9px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+.pw-task-name{font-size:11px;color:var(--text);font-family:var(--font-mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pw-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .cal-day.full{background:rgba(200,245,66,.14);color:var(--accent);font-weight:600;}
 .cal-day.partial{background:rgba(245,167,66,.1);color:var(--accent3);}
 .cal-day.zero{background:rgba(245,66,66,.06);color:rgba(245,66,66,.5);}
@@ -1344,6 +1356,18 @@ body.sky-night::before{background:
   <div class="tl-line"></div>
 </div>
 
+<!-- WIDGET COMPACTO DE PROYECTOS -->
+<div id="proj-widget" style="margin-top:14px;margin-bottom:4px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;">📌 Tareas rápidas</span>
+    <button onclick="toggleProjWidget()" id="proj-widget-toggle" style="background:none;border:none;color:var(--muted);font-size:9px;font-family:var(--font-mono);cursor:pointer;letter-spacing:.06em;padding:2px 6px;">ocultar ▲</button>
+  </div>
+  <div id="proj-widget-body">
+    <div id="proj-widget-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <div id="proj-widget-empty" style="display:none;text-align:center;padding:14px;color:var(--muted);font-size:10px;">No hay tareas pendientes en proyectos.</div>
+  </div>
+</div>
+
 <div class="section" style="margin-top:18px;">
   <!-- Botones: nuevo proyecto + separador -->
   <div style="display:flex;gap:8px;margin-bottom:14px;">
@@ -1426,6 +1450,21 @@ body.sky-night::before{background:
     <div class="anim-wrap" id="anim-wrap"><canvas id="ex-anim-canvas" style="display:block;width:100%;height:100%;"></canvas></div>
     <div class="modal-desc" id="m-desc"></div>
     <div class="modal-muscles" id="m-muscles"></div>
+  </div>
+</div>
+
+<!-- MODAL: Resumen del día (solo lectura) -->
+<div class="modal-ov hidden" id="day-modal" onclick="if(event.target===this)closeDayModal()" style="z-index:900;">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:340px;padding:22px 20px;">
+    <button class="modal-x" onclick="closeDayModal()">✕</button>
+    <div id="day-modal-date" style="font-family:var(--font-head);font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;"></div>
+    <div id="day-modal-pct" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:16px;"></div>
+    <div id="day-modal-bar" style="height:4px;border-radius:2px;background:var(--surface2);margin-bottom:18px;overflow:hidden;">
+      <div id="day-modal-bar-fill" style="height:100%;border-radius:2px;transition:width .4s;"></div>
+    </div>
+    <div id="day-modal-tasks" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="day-modal-empty" style="display:none;text-align:center;color:var(--muted);font-size:11px;padding:20px 0;">Sin detalle guardado para este día.</div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);font-size:9px;color:var(--muted);letter-spacing:.1em;text-align:center;">MODO SOLO LECTURA · NO SE PUEDE MODIFICAR</div>
   </div>
 </div>
 
@@ -1635,7 +1674,13 @@ function saveCalendarDay(){
   const done = TASKS_DEF.filter(t=>!!ckState[t.id]).length;
   const total = TASKS_DEF.length;
   const ratio = total > 0 ? done/total : 0;
-  db.collection("appData").doc("calendar").set({ ['cal_'+new Date().toDateString()]: ratio.toFixed(2) }, {merge:true});
+  const dayKey = new Date().toDateString();
+  // Guardar ratio Y detalle de tareas (para ver en el modal del calendario)
+  const detalle = TASKS_DEF.map(t => ({ id: t.id, icon: t.icon, name: t.name, done: !!ckState[t.id] }));
+  db.collection("appData").doc("calendar").set({
+    ['cal_'+dayKey]: ratio.toFixed(2),
+    ['cal_det_'+dayKey]: JSON.stringify(detalle)
+  }, {merge:true});
 }
 
 // ===== CALENDAR =====
@@ -1651,6 +1696,76 @@ db.collection("appData").doc("calendar").onSnapshot((doc) => {
 });
 
 function calNav(dir){ calMonth += dir; if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+
+// ===== MODAL RESUMEN DEL DÍA (solo lectura) =====
+const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DOW_LARGO = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function openDayModal(date, ratio){
+  const modal = document.getElementById('day-modal');
+  if(!modal) return;
+
+  // Título
+  document.getElementById('day-modal-date').textContent =
+    DOW_LARGO[date.getDay()] + ', ' + date.getDate() + ' de ' + MESES_LARGO[date.getMonth()] + ' ' + date.getFullYear();
+
+  const pct = Math.round(ratio * 100);
+  document.getElementById('day-modal-pct').textContent = pct + '% del día completado';
+
+  // Barra de progreso
+  const fill = document.getElementById('day-modal-bar-fill');
+  const color = pct >= 80 ? 'var(--accent)' : pct > 0 ? 'var(--accent3)' : 'var(--red)';
+  fill.style.width = pct + '%';
+  fill.style.background = color;
+
+  // Tareas
+  const tasksEl = document.getElementById('day-modal-tasks');
+  const emptyEl = document.getElementById('day-modal-empty');
+  tasksEl.innerHTML = '';
+
+  const detKey = 'cal_det_' + date.toDateString();
+  const detRaw = calData[detKey];
+
+  if(detRaw){
+    try{
+      const tareas = JSON.parse(detRaw);
+      emptyEl.style.display = 'none';
+      tasksEl.style.display = 'flex';
+      tareas.forEach(t => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);opacity:' + (t.done ? '1' : '0.5') + ';';
+        row.innerHTML = `
+          <span style="font-size:16px;">${t.icon}</span>
+          <span style="font-family:var(--font-mono);font-size:11px;color:${t.done ? 'var(--text)' : 'var(--muted)'};flex:1;">${t.name}</span>
+          <span style="font-size:14px;">${t.done ? '✅' : '⬜'}</span>
+        `;
+        tasksEl.appendChild(row);
+      });
+    } catch(e){
+      emptyEl.style.display = 'block';
+      tasksEl.style.display = 'none';
+    }
+  } else {
+    // Solo tenemos el ratio, mostrar info básica
+    emptyEl.style.display = 'none';
+    tasksEl.style.display = 'flex';
+    const info = document.createElement('div');
+    info.style.cssText = 'text-align:center;padding:14px;color:var(--muted);font-size:11px;line-height:1.8;';
+    info.innerHTML = `<div style="font-size:28px;margin-bottom:8px;">${pct >= 80 ? '🏆' : pct > 0 ? '⚡' : '😴'}</div>
+      <div style="color:var(--text);font-size:13px;font-weight:600;">${pct}% completado</div>
+      <div style="margin-top:6px;font-size:10px;">Este día fue registrado antes de que<br>se guardara el detalle de tareas.</div>`;
+    tasksEl.appendChild(info);
+  }
+
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDayModal(){
+  const modal = document.getElementById('day-modal');
+  if(modal) modal.classList.add('hidden');
+  document.body.style.overflow = '';
+}
 
 function renderCalendar(){
   document.getElementById('cal-month').textContent = MESES[calMonth]+' '+calYear;
@@ -1676,6 +1791,11 @@ function renderCalendar(){
     }
     el.className = cls;
     el.innerHTML = d + (ratio!==null?'<div class="cal-day-dot"></div>':'');
+    if(ratio !== null){
+      el.addEventListener('click', function(){
+        openDayModal(new Date(calYear, calMonth, d), ratio);
+      });
+    }
     grid.appendChild(el);
   }
 }
@@ -2395,7 +2515,7 @@ async function loadCrypto(){
       }
     });
     drawAllSparklines();
-    genBriefing();
+    // genBriefing() ya NO se llama automáticamente — solo al presionar el botón
   }catch(e){ console.log("Error cripto:", e); }
 }
 loadCrypto();
@@ -2630,7 +2750,7 @@ async function genNews(){
   }
   btn.disabled=false;
 }
-setTimeout(()=>{ genNews(); }, 1500);
+// genNews() ya NO se llama automáticamente al cargar — solo al presionar el botón "Actualizar noticias"
 
 // ===== YOUTUBE REMINDER (FIREBASE) =====
 let ytData = { lastUpload: null, streak: [] };
@@ -5775,6 +5895,8 @@ function pedirPermisoNotif(){
         'A partir de ahora recibirás tu resumen diario, recordatorios de bloque y motivación nocturna. 🔥',
         'notif-test'
       );
+      // Programar notificaciones vía SW para que lleguen aunque la app esté cerrada
+      setTimeout(programarNotificacionesSW, 1500);
     } else {
       alert('Permiso denegado. Sin notificaciones por ahora.');
     }
@@ -5821,6 +5943,7 @@ db.collection("appData").doc("proyectos").onSnapshot((doc) => {
     proyectos = nuevos;
     _proyInitialized = true;
     renderProyectos();
+    renderProjWidget(); // ← widget compacto inicial
   } else {
     // Solo sincronizar datos sin re-renderizar (evita cerrar tarjetas abiertas)
     proyectos = nuevos;
@@ -5835,6 +5958,7 @@ db.collection("appData").doc("proyectos").onSnapshot((doc) => {
         pctEl.style.color = calcPendientes(p) === 0 ? '#22d3a0' : 'var(--accent3)';
       }
     });
+    renderProjWidget(); // ← actualizar widget al cambiar datos
   }
 });
 
@@ -5896,6 +6020,7 @@ function crearProyecto(){
   if(vacio) vacio.style.display = 'none';
   saveProyectos();
   cerrarModalProyecto();
+  renderProjWidget(); // actualizar widget compacto
 }
 
 // ── Calcular pendientes de un proyecto ──
@@ -6405,6 +6530,7 @@ function toggleTareaProy(proyId, idx){
   p.tareas[idx].done = !p.tareas[idx].done;
   _actualizarCardTareas(proyId);   // actualiza DOM primero
   saveProyectos();                  // luego guarda (no re-renderiza por _proyInitialized)
+  renderProjWidget();               // sincronizar widget compacto
 }
 
 // ── Agregar tarea ──
@@ -6419,6 +6545,7 @@ function addTareaProy(proyId){
   inp.value = '';
   _actualizarCardTareas(proyId);
   saveProyectos();
+  renderProjWidget();
 }
 
 // ── Borrar tarea (con confirmación) ──
@@ -6429,6 +6556,7 @@ function deleteTareaProy(proyId, idx){
   p.tareas.splice(idx, 1);
   _actualizarCardTareas(proyId);
   saveProyectos();
+  renderProjWidget();
 }
 
 // ── Eliminar proyecto ──
@@ -6440,9 +6568,91 @@ function eliminarProyecto(id){
   const vacio = document.getElementById('proyectos-vacio');
   if(vacio) vacio.style.display = proyectos.length === 0 ? 'block' : 'none';
   saveProyectos();
+  renderProjWidget(); // actualizar widget compacto
 }
 
 // ── SEPARADORES DE SECCIÓN ──────────────────────────────────────────────────
+// ── WIDGET COMPACTO DE PROYECTOS ──────────────────────────────────────────────
+let _projWidgetVisible = true;
+
+function toggleProjWidget(){
+  _projWidgetVisible = !_projWidgetVisible;
+  const body = document.getElementById('proj-widget-body');
+  const btn = document.getElementById('proj-widget-toggle');
+  if(body) body.style.display = _projWidgetVisible ? 'block' : 'none';
+  if(btn) btn.textContent = _projWidgetVisible ? 'ocultar ▲' : 'mostrar ▼';
+}
+
+function renderProjWidget(){
+  const list = document.getElementById('proj-widget-list');
+  const empty = document.getElementById('proj-widget-empty');
+  if(!list) return;
+  list.innerHTML = '';
+
+  // Recolectar todas las tareas pendientes de todos los proyectos
+  const pendientes = [];
+  proyectos.forEach(p => {
+    if(p.tipo === 'separador') return;
+    if(!p.tareas || p.tareas.length === 0) return;
+    p.tareas.forEach((t, idx) => {
+      pendientes.push({ proy: p, tarea: t, idx });
+    });
+  });
+
+  if(pendientes.length === 0){
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+
+  // Mostrar máximo 8 tareas (primero las pendientes, luego las done)
+  const sorted = [...pendientes.filter(x => !x.tarea.done), ...pendientes.filter(x => x.tarea.done)];
+  const shown = sorted.slice(0, 8);
+
+  shown.forEach(({ proy, tarea, idx }) => {
+    const col = proy.c || 'var(--accent2)';
+    const isDone = !!tarea.done;
+    const el = document.createElement('div');
+    el.className = 'pw-item' + (isDone ? ' pw-done' : '');
+    el.innerHTML = `
+      <div class="pw-dot" style="background:${col};opacity:${isDone?0.4:1};"></div>
+      <div class="pw-cb">${isDone ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#05050e" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="pw-proj-name">${proy.t || 'Proyecto'}</div>
+        <div class="pw-task-name">${tarea.texto}</div>
+      </div>
+    `;
+    el.addEventListener('click', function(){
+      toggleTareaWidget(proy.id, idx);
+    });
+    list.appendChild(el);
+  });
+
+  // Si hay más tareas, mostrar indicador
+  if(sorted.length > 8){
+    const more = document.createElement('div');
+    more.style.cssText = 'text-align:center;font-size:9px;color:var(--muted);padding:4px 0;letter-spacing:.06em;';
+    more.textContent = '+ ' + (sorted.length - 8) + ' tareas más — ver tablero completo ↓';
+    list.appendChild(more);
+  }
+}
+
+function toggleTareaWidget(proyId, idx){
+  const p = proyectos.find(x => x.id === proyId);
+  if(!p || !p.tareas[idx]) return;
+  p.tareas[idx].done = !p.tareas[idx].done;
+  renderProjWidget();         // actualizar widget
+  _actualizarCardTareas(proyId); // actualizar tarjeta completa si está abierta
+  saveProyectos();
+}
+
+// Enganchar al snapshot de proyectos para que el widget se actualice automáticamente
+function _initProjWidget(){
+  // Esperar a que proyectos esté listo y luego renderizar
+  setTimeout(renderProjWidget, 500);
+}
+_initProjWidget();
+
 function agregarSeparador(){
   const sep = {
     id: Date.now(),
@@ -6984,20 +7194,161 @@ if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.
 }
 
 // Registrar Service Worker (necesario para prompt de instalación real en Chrome/Android)
+// ===== SERVICE WORKER CON NOTIFICACIONES EN BACKGROUND =====
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(function(err) {
-    // Si falla (ej. no existe el archivo), intentar registrar uno inline via blob
-    var swCode = `
-      self.addEventListener('install', function(e) { self.skipWaiting(); });
-      self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
-      self.addEventListener('fetch', function(e) {
-        e.respondWith(fetch(e.request).catch(function() { return new Response(''); }));
-      });
-    `;
-    var blob = new Blob([swCode], { type: 'application/javascript' });
-    var swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl).catch(function(){});
+  // SW mejorado con soporte de notificaciones programadas
+  var swCode = `
+    const CACHE_NAME = '1pct-v2';
+    self.addEventListener('install', function(e) { self.skipWaiting(); });
+    self.addEventListener('activate', function(e) { e.waitUntil(clients.claim()); });
+    self.addEventListener('fetch', function(e) {
+      e.respondWith(fetch(e.request).catch(function() { return new Response(''); }));
+    });
+
+    // Recibir mensajes de la página para programar notificaciones
+    self.addEventListener('message', function(event) {
+      if(event.data && event.data.type === 'SCHEDULE_NOTIF'){
+        var data = event.data;
+        var delay = data.delay || 0;
+        setTimeout(function(){
+          self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: data.icon || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23c8f542"/><text x="32" y="44" font-size="28" text-anchor="middle" fill="%2305050e" font-weight="bold">1%</text></svg>',
+            badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23c8f542"/></svg>',
+            tag: data.tag || 'notif-1pct',
+            renotify: true,
+            requireInteraction: false,
+            vibrate: [200, 100, 200],
+            data: { url: self.location.origin }
+          });
+        }, delay);
+      }
+      if(event.data && event.data.type === 'NOTIF_NOW'){
+        self.registration.showNotification(event.data.title, {
+          body: event.data.body,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23c8f542"/><text x="32" y="44" font-size="28" text-anchor="middle" fill="%2305050e" font-weight="bold">1%</text></svg>',
+          tag: event.data.tag || 'notif-1pct',
+          renotify: true,
+          vibrate: [200, 100, 200],
+          data: { url: self.location.origin }
+        });
+      }
+    });
+
+    // Al hacer click en notificación → abrir/enfocar la app
+    self.addEventListener('notificationclick', function(event) {
+      event.notification.close();
+      event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+          for(var i = 0; i < clientList.length; i++){
+            var client = clientList[i];
+            if(client.url && 'focus' in client) return client.focus();
+          }
+          if(clients.openWindow) return clients.openWindow('/');
+        })
+      );
+    });
+  `;
+
+  var blob = new Blob([swCode], { type: 'application/javascript' });
+  var swUrl = URL.createObjectURL(blob);
+
+  navigator.serviceWorker.register(swUrl).then(function(reg){
+    console.log('SW registrado:', reg.scope);
+    // Guardar referencia global al SW registration
+    window._swReg = reg;
+    // Programar las notificaciones del día usando el SW
+    setTimeout(programarNotificacionesSW, 2000);
+  }).catch(function(e){
+    console.log('SW error:', e);
+    // Intentar con /sw.js como fallback
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
   });
+}
+
+// ─── Programar notificaciones vía SW (funcionan aunque la app esté cerrada) ───
+function programarNotificacionesSW(){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  if(!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+
+  const sw = navigator.serviceWorker.controller;
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const hf = h + m/60;
+
+  // Solo programar notificaciones que aún no han pasado hoy
+  function msHasta(targetH, targetM){
+    const target = new Date();
+    target.setHours(targetH, targetM, 0, 0);
+    const ms = target - now;
+    return ms > 0 ? ms : null;
+  }
+
+  // Notificación de mañana: 8:00 AM
+  if(!localStorage.getItem(notifKey('manana'))){
+    const delay = msHasta(8, 0);
+    if(delay !== null){
+      const tareas = TASKS_DEF.map(t => t.icon + ' ' + t.name).join(' · ');
+      sw.postMessage({
+        type: 'SCHEDULE_NOTIF',
+        delay: delay,
+        title: '☀️ ¡Buenos días, Víctor!',
+        body: randomFrom(NOTIF_MAÑANA) + '\n\nHoy: ' + tareas,
+        tag: 'notif-manana'
+      });
+    }
+  }
+
+  // Notificación de noche: 10:00 PM
+  if(!localStorage.getItem(notifKey('noche'))){
+    const delay = msHasta(22, 0);
+    if(delay !== null){
+      const pct = getPorcentajeDia();
+      const msg = (pct >= 70 ? randomFrom(NOTIF_NOCHE_BIEN) : randomFrom(NOTIF_NOCHE_REGULAR)).replace('{P}', pct);
+      sw.postMessage({
+        type: 'SCHEDULE_NOTIF',
+        delay: delay,
+        title: '🌙 Resumen de tu día',
+        body: msg,
+        tag: 'notif-noche'
+      });
+    }
+  }
+
+  // Bloques de tarde
+  NOTIF_TARDE.forEach(bloque => {
+    const tag = 'bloque_' + bloque.icon;
+    if(!localStorage.getItem(notifKey(tag))){
+      const delay = msHasta(Math.floor(bloque.desde + 0.5), Math.round((bloque.desde + 0.5 - Math.floor(bloque.desde + 0.5)) * 60));
+      if(delay !== null){
+        const hora = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+        sw.postMessage({
+          type: 'SCHEDULE_NOTIF',
+          delay: delay,
+          title: '⏰ Recordatorio de bloque',
+          body: bloque.msg.replace('{H}', hora),
+          tag: 'notif-tarde-' + bloque.icon
+        });
+      }
+    }
+  });
+}
+
+// Enviar notificación inmediata vía SW (si está disponible) o fallback a Notification API
+function enviarNotifSW(titulo, cuerpo, tag){
+  // Intentar vía SW primero (funciona aunque la app esté en background como PWA)
+  if(navigator.serviceWorker && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({
+      type: 'NOTIF_NOW',
+      title: titulo,
+      body: cuerpo,
+      tag: tag
+    });
+    return;
+  }
+  // Fallback: Notification API directa
+  enviarNotif(titulo, cuerpo, tag);
 }
 </script>
 
