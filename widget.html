@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>1% · Hoy</title>
+
+<meta name="theme-color" content="#05050e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="1% Hoy">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #05050e;
+  --surface: #111113;
+  --surface2: #18181c;
+  --border: #222228;
+  --text: #e8e8ec;
+  --muted: #5a5a6a;
+  --accent: #c8f542;
+  --accent2: #42f5c8;
+  --accent3: #f5a742;
+  --red: #f54242;
+  --purple: #a78bfa;
+  --font-head: 'Syne', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Fondo nebula */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 15%, rgba(167,139,250,0.20) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 40% at 90% 80%, rgba(66,245,200,0.15) 0%, transparent 60%);
+}
+
+.w-wrap {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px 24px;
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Header ── */
+.w-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.w-logo {
+  font-family: var(--font-head);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.w-date {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ── Barra de progreso ── */
+.w-progress-wrap {
+  margin-bottom: 18px;
+}
+
+.w-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.w-progress-label {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.w-pct {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  font-family: var(--font-head);
+}
+
+.w-bar {
+  height: 5px;
+  background: var(--surface2);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.w-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Lista de tareas ── */
+.w-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.w-task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: all .18s;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.w-task::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--task-color, var(--accent));
+  border-radius: 3px 0 0 3px;
+  opacity: 0.7;
+}
+
+.w-task:active {
+  transform: scale(0.97);
+}
+
+.w-task.done {
+  background: rgba(200,245,66,.04);
+  border-color: rgba(200,245,66,.15);
+  opacity: 0.65;
+}
+
+.w-task.done .w-task-name {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.w-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all .18s;
+  background: transparent;
+}
+
+.w-task.done .w-checkbox {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.w-task.done .w-checkbox svg {
+  display: block;
+}
+
+.w-checkbox svg {
+  display: none;
+}
+
+.w-task-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.w-task-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.w-task-name {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.w-task-time {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
+  letter-spacing: .04em;
+}
+
+/* ── Tap feedback ring ── */
+@keyframes ring-pop {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.w-task.just-done .w-checkbox::after {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--accent);
+  animation: ring-pop .35s ease forwards;
+}
+
+/* ── Footer ── */
+.w-footer {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.w-open-btn {
+  flex: 1;
+  background: rgba(200,245,66,.08);
+  border: 1px solid rgba(200,245,66,.25);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  letter-spacing: .06em;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all .15s;
+}
+
+.w-open-btn:active { opacity: .7; }
+
+.w-streak {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: .04em;
+  text-align: right;
+  line-height: 1.5;
+}
+
+.w-streak strong {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+/* ── Loading state ── */
+.w-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .06em;
+}
+
+.w-spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Motivación ── */
+.w-motive {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.6;
+  text-align: center;
+  font-style: italic;
+}
+
+.w-motive strong {
+  color: var(--accent);
+  font-style: normal;
+}
+
+/* Responsive: pantallas muy pequeñas */
+@media (max-height: 600px) {
+  .w-wrap { padding: 12px 14px 16px; }
+  .w-task { padding: 10px 12px; }
+  .w-tasks { gap: 6px; }
+  .w-motive { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="w-wrap">
+
+  <!-- Header -->
+  <div class="w-header">
+    <div class="w-logo">1%</div>
+    <div class="w-date" id="w-date">—</div>
+  </div>
+
+  <!-- Progreso -->
+  <div class="w-progress-wrap">
+    <div class="w-progress-top">
+      <span class="w-progress-label">Progreso del día</span>
+      <span class="w-pct" id="w-pct">0%</span>
+    </div>
+    <div class="w-bar">
+      <div class="w-bar-fill" id="w-bar-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Tareas -->
+  <div class="w-tasks" id="w-tasks">
+    <div class="w-loading" id="w-loading">
+      <div class="w-spinner"></div>
+      Cargando tu día…
+    </div>
+  </div>
+
+  <!-- Frase motivacional -->
+  <div class="w-motive" id="w-motive" style="display:none;"></div>
+
+  <!-- Footer -->
+  <div class="w-footer">
+    <a class="w-open-btn" href="./index.html">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Abrir app completa
+    </a>
+    <div class="w-streak" id="w-streak"></div>
+  </div>
+
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+<script>
+// ── Firebase config (misma que la app principal) ──
+const firebaseConfig = {
+  apiKey: "AIzaSyDHaEralCAkoqc8pcVdhkKj2ZBi2-NKLTM",
+  authDomain: "mejor-cada-dia.firebaseapp.com",
+  projectId: "mejor-cada-dia",
+  storageBucket: "mejor-cada-dia.firebasestorage.app",
+  messagingSenderId: "859627333858",
+  appId: "1:859627333858:web:400e5ff0f2744e5d2316bb",
+  measurementId: "G-MJP7MQ4781"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ── Definición de tareas (igual que la app) ──
+const TASKS_SEMANA = [
+  {id:'mercado',    icon:'₿',  name:'Revisar mercados',      time:'8:00 AM',     color:'#42f5c8'},
+  {id:'noticias',   icon:'📰', name:'Leer noticias cripto',  time:'8:30 AM',     color:'#42f5c8'},
+  {id:'gym',        icon:'💪', name:'Ir al gym',             time:'11:00 AM',    color:'#c8f542'},
+  {id:'contenido',  icon:'📱', name:'Crear contenido',       time:'2:00 PM',     color:'#f5a742'},
+  {id:'redes',      icon:'✅', name:'Publicar en redes',     time:'2:30 PM',     color:'#f5a742'},
+  {id:'tatuajes',   icon:'🗓', name:'Tatuaje / Dibujo',      time:'3:00 PM',     color:'#f5a742'},
+  {id:'yt',         icon:'▶',  name:'Subir video YouTube',   time:'4:00 PM',     color:'#ff4444'},
+  {id:'meditacion', icon:'🌙', name:'Meditación',            time:'11:00 PM',    color:'#a78bfa'},
+];
+
+const TASKS_SABADO = [
+  {id:'gym',        icon:'💪', name:'Ir al gym',             time:'11:00 AM',    color:'#c8f542'},
+  {id:'proyectos',  icon:'🚀', name:'Avanzar en proyectos',  time:'2:00 PM',     color:'#42f5c8'},
+  {id:'tatuajes',   icon:'🖊', name:'Tatuaje / Dibujo',      time:'4:00 PM',     color:'#f5a742'},
+  {id:'meditacion', icon:'🌙', name:'Meditación',            time:'11:00 PM',    color:'#a78bfa'},
+];
+
+const TASKS_DOMINGO = [
+  {id:'descanso',   icon:'☀️', name:'Disfruta tu descanso',  time:'Todo el día', color:'#c8f542'},
+  {id:'reflexion',  icon:'📖', name:'Reflexión semanal',     time:'Mañana',      color:'#42f5c8'},
+  {id:'naturaleza', icon:'🌿', name:'Sal a caminar / nature', time:'Tarde',      color:'#f5a742'},
+  {id:'meditacion', icon:'🌙', name:'Meditación profunda',   time:'11:00 PM',    color:'#a78bfa'},
+];
+
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+const FRASES = [
+  "Cada hábito que marcas es <strong>evidencia</strong> de quien eres.",
+  "No tienes que ser perfecto. Solo <strong>aparecer</strong>.",
+  "El 1% de hoy se convierte en el <strong>100%</strong> de mañana.",
+  "Consistencia > Intensidad. <strong>Siempre.</strong>",
+  "Hoy fue un día para <strong>construir</strong>, no para esperar.",
+  "Lo que haces en silencio <strong>habla por ti</strong> en público.",
+  "Un hábito a la vez. Un día a la vez. <strong>Un 1% a la vez.</strong>",
+];
+
+// ── Estado ──
+let ckState = {};
+let TASKS_DEF = [];
+let _loaded = false;
+
+function getTasks(){
+  const dow = new Date().getDay();
+  if(dow === 0) return TASKS_DOMINGO;
+  if(dow === 6) return TASKS_SABADO;
+  return TASKS_SEMANA;
+}
+
+// ── Fecha ──
+function setDate(){
+  const now = new Date();
+  const dow = DIAS[now.getDay()];
+  const d = now.getDate();
+  const m = MESES[now.getMonth()];
+  document.getElementById('w-date').innerHTML = dow + '<br>' + d + ' ' + m;
+}
+
+// ── Progreso ──
+function updateProgress(){
+  const done = TASKS_DEF.filter(t => !!ckState[t.id]).length;
+  const total = TASKS_DEF.length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  document.getElementById('w-pct').textContent = pct + '%';
+  const fill = document.getElementById('w-bar-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = pct >= 80 ? '#c8f542' : pct >= 50 ? '#f5a742' : pct > 0 ? '#42f5c8' : '#5a5a6a';
+
+  // Streak / contador
+  const streakEl = document.getElementById('w-streak');
+  streakEl.innerHTML = '<strong>' + done + '</strong>/' + total + '<br>completadas';
+
+  // Frase motivacional cuando hay avance
+  const motiveEl = document.getElementById('w-motive');
+  if(done > 0){
+    motiveEl.innerHTML = FRASES[done % FRASES.length];
+    motiveEl.style.display = 'block';
+  } else {
+    motiveEl.style.display = 'none';
+  }
+}
+
+// ── Render tareas ──
+function renderTasks(){
+  const container = document.getElementById('w-tasks');
+  container.innerHTML = '';
+
+  TASKS_DEF.forEach(t => {
+    const isDone = !!ckState[t.id];
+    const el = document.createElement('div');
+    el.className = 'w-task' + (isDone ? ' done' : '');
+    el.style.setProperty('--task-color', t.color);
+    el.dataset.id = t.id;
+
+    el.innerHTML = `
+      <div class="w-checkbox">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#05050e" stroke-width="3.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="w-task-icon">${t.icon}</div>
+      <div class="w-task-info">
+        <div class="w-task-name">${t.name}</div>
+        <div class="w-task-time">${t.time}</div>
+      </div>
+    `;
+
+    el.addEventListener('click', function(){
+      toggleTask(t.id, el);
+    });
+
+    container.appendChild(el);
+  });
+
+  updateProgress();
+}
+
+// ── Toggle tarea ──
+function toggleTask(id, el){
+  ckState[id] = !ckState[id];
+  const isDone = !!ckState[id];
+
+  // Feedback visual inmediato
+  if(isDone){
+    el.classList.add('just-done');
+    setTimeout(() => el.classList.remove('just-done'), 400);
+  }
+  el.classList.toggle('done', isDone);
+  const taskName = el.querySelector('.w-task-name');
+  if(taskName) taskName.style.textDecoration = isDone ? 'line-through' : '';
+
+  updateProgress();
+
+  // Guardar en Firebase
+  db.collection("appData").doc("checklist").set({ state: ckState });
+
+  // Guardar en calendario también
+  saveCalendarDay();
+}
+
+// ── Guardar progreso del día en calendario ──
+function saveCalendarDay(){
+  const done = TASKS_DEF.filter(t => !!ckState[t.id]).length;
+  const total = TASKS_DEF.length;
+  const ratio = total > 0 ? done / total : 0;
+  const dayKey = new Date().toDateString();
+  const detalle = TASKS_DEF.map(t => ({ id: t.id, icon: t.icon, name: t.name, done: !!ckState[t.id] }));
+  db.collection("appData").doc("calendar").set({
+    ['cal_' + dayKey]: ratio.toFixed(2),
+    ['cal_det_' + dayKey]: JSON.stringify(detalle)
+  }, { merge: true });
+}
+
+// ── Init ──
+setDate();
+TASKS_DEF = getTasks();
+
+// Cargar estado desde Firebase
+db.collection("appData").doc("checklist").onSnapshot(doc => {
+  ckState = doc.exists ? (doc.data().state || {}) : {};
+  if(!_loaded){
+    _loaded = true;
+    document.getElementById('w-loading') && (document.getElementById('w-loading').remove());
+  }
+  renderTasks();
+});
+
+// ── Service Worker para notificaciones en background ──
+if('serviceWorker' in navigator){
+  var swCode = `
+    self.addEventListener('install', function(e){ self.skipWaiting(); });
+    self.addEventListener('activate', function(e){ e.waitUntil(clients.claim()); });
+    self.addEventListener('fetch', function(e){
+      e.respondWith(fetch(e.request).catch(function(){ return new Response(''); }));
+    });
+    self.addEventListener('message', function(event){
+      if(event.data && event.data.type === 'NOTIF_NOW'){
+        self.registration.showNotification(event.data.title, {
+          body: event.data.body,
+          tag: event.data.tag || 'notif-widget',
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%23c8f542"/><text x="32" y="44" font-size="28" text-anchor="middle" fill="%2305050e" font-weight="bold">1%25</text></svg>',
+          vibrate: [200,100,200]
+        });
+      }
+    });
+    self.addEventListener('notificationclick', function(event){
+      event.notification.close();
+      event.waitUntil(clients.openWindow('./widget.html'));
+    });
+  `;
+  var blob = new Blob([swCode], { type: 'application/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(blob));
+}
+</script>
+
+</body>
+</html>
