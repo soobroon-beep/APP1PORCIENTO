@@ -757,10 +757,11 @@ body.sky-night::before{background:
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
     <div class="time-display" id="reloj"></div>
     <div id="actividad-badge" style="
-      font-family:var(--font-mono);font-size:9px;letter-spacing:.06em;
-      color:var(--bg);padding:2px 8px;border-radius:20px;
-      font-weight:700;text-transform:uppercase;white-space:nowrap;
+      font-family:var(--font-head);font-size:13px;letter-spacing:.04em;
+      color:var(--bg);padding:5px 14px;border-radius:20px;
+      font-weight:800;text-transform:uppercase;white-space:nowrap;
       transition:background .3s ease, opacity .2s ease, transform .2s ease;background:#22d3a0;
+      box-shadow:0 2px 12px rgba(34,211,160,0.35);
     "></div>
     <!-- Selector de tema -->
     <div class="theme-menu-wrap" id="theme-wrap">
@@ -802,19 +803,22 @@ body.sky-night::before{background:
 
 <!-- ===== BANNER MOTIVACIONAL ===== -->
 <div id="motiv-banner" style="
-  background:linear-gradient(90deg,rgba(200,245,66,0.07) 0%,rgba(66,245,200,0.05) 50%,rgba(167,139,250,0.07) 100%);
-  border-bottom:1px solid rgba(200,245,66,0.12);
-  padding:8px 18px;
-  display:flex;align-items:center;gap:8px;
-  min-height:34px;overflow:hidden;
-">
-  <span style="font-size:9px;color:var(--accent);opacity:0.6;flex-shrink:0;letter-spacing:.1em;font-family:var(--font-mono);">✦</span>
-  <div id="motiv-text" style="
-    font-family:var(--font-mono);font-size:10px;color:rgba(200,245,66,0.75);
-    letter-spacing:.04em;line-height:1.4;flex:1;text-align:center;
-    transition:opacity .6s ease;
-  ">Cada día es una nueva oportunidad de ser 1% mejor</div>
-  <span style="font-size:9px;color:var(--accent);opacity:0.6;flex-shrink:0;letter-spacing:.1em;font-family:var(--font-mono);">✦</span>
+  background:linear-gradient(135deg,rgba(200,245,66,0.06) 0%,rgba(66,245,200,0.04) 50%,rgba(167,139,250,0.07) 100%);
+  border-bottom:1px solid rgba(200,245,66,0.1);
+  padding:11px 20px 12px;
+  display:flex;align-items:center;gap:10px;
+  min-height:44px;overflow:hidden;cursor:pointer;
+" onclick="nextMotivFrase()">
+  <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+    <div id="motiv-text" style="
+      font-family:var(--font-head);font-size:13px;font-weight:700;
+      color:var(--accent);
+      line-height:1.35;
+      transition:opacity .5s ease;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    ">Cada día es una nueva oportunidad de ser 1% mejor</div>
+    <div style="font-size:8px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.08em;opacity:0.6;">TAP PARA SIGUIENTE ✦</div>
+  </div>
 </div>
 
 <div class="mob-sec mob-sec-resumen" id="mob-sec-resumen">
@@ -857,6 +861,37 @@ body.sky-night::before{background:
   </div>
 </div>
 </div><!-- /mob-sec-resumen -->
+
+<!-- ===== API KEY — debajo del resumen del día ===== -->
+<div class="mob-sec mob-sec-resumen" id="mob-sec-resumen" style="display:contents;"><!-- keeps same tab visibility -->
+</div>
+<!-- API KEY CARD — visible solo en pestaña resumen -->
+<div id="apikey-inline-wrap" style="padding:0 16px 14px;display:none;">
+  <div class="card" style="padding:14px 16px;" id="apikey-card-inline">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px;">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--accent2);display:inline-block;"></span>
+        🔑 API Key — Claude IA
+      </div>
+      <span id="apikey-status-badge" style="font-size:8px;padding:2px 8px;border-radius:99px;background:rgba(245,66,66,.12);border:1px solid rgba(245,66,66,.3);color:#f08080;">Sin key</span>
+    </div>
+    <div id="apikey-saved-row" style="display:none;margin-bottom:4px;">
+      <div style="background:rgba(66,245,200,.06);border:1px solid rgba(66,245,200,.2);border-radius:8px;padding:8px 12px;font-size:10px;color:var(--accent2);display:flex;align-items:center;gap:8px;">
+        <span>✅ API key activa — la IA está disponible</span>
+        <button onclick="clearApiKeyInline()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:9px;cursor:pointer;padding:0;">Cambiar</button>
+      </div>
+    </div>
+    <div id="apikey-input-row">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.6;">Crea tu key en <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent2);">console.anthropic.com</a> → empieza con <code style="color:var(--accent);font-size:10px;">sk-ant-</code></div>
+      <div style="display:flex;gap:7px;margin-bottom:6px;">
+        <input type="password" id="apikey-inp-inline" placeholder="sk-ant-api03-..." style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:8px 10px;border-radius:8px;outline:none;" oninput="syncApiKeyInputs(this.value)" />
+        <button onclick="saveApiKeyInline()" style="background:rgba(200,245,66,.12);border:1px solid rgba(200,245,66,.3);color:var(--accent);font-family:var(--font-mono);font-size:10px;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;">✓ Guardar</button>
+      </div>
+      <button onclick="testApiKeyInline()" style="width:100%;background:rgba(66,245,200,.07);border:1px solid rgba(66,245,200,.2);color:var(--accent2);font-family:var(--font-mono);font-size:9px;padding:7px;border-radius:8px;cursor:pointer;">🧪 Probar conexión</button>
+      <div id="apikey-test-result-inline" style="display:none;font-size:10px;margin-top:7px;padding:6px 10px;border-radius:7px;background:var(--surface2);font-family:var(--font-mono);"></div>
+    </div>
+  </div>
+</div>
 
 <div class="mob-sec mob-sec-dia" id="mob-sec-dia">
 
@@ -1191,34 +1226,6 @@ body.sky-night::before{background:
 </div>
 
 
-
-<!-- ====== API KEY INLINE ====== -->
-<div class="section" id="apikey-section-inline">
-  <div class="card" style="padding:16px 16px 14px;" id="apikey-card-inline">
-    <div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;justify-content:space-between;">
-      <span style="display:flex;align-items:center;gap:6px;">
-        <span style="width:5px;height:5px;border-radius:50%;background:var(--accent2);display:inline-block;"></span>
-        🔑 API Key — Claude IA
-      </span>
-      <span id="apikey-status-badge" style="font-size:8px;padding:2px 8px;border-radius:99px;background:rgba(245,66,66,.12);border:1px solid rgba(245,66,66,.3);color:#f08080;">Sin key</span>
-    </div>
-    <div id="apikey-saved-row" style="display:none;margin-bottom:10px;">
-      <div style="background:rgba(66,245,200,.06);border:1px solid rgba(66,245,200,.2);border-radius:8px;padding:8px 12px;font-size:10px;color:var(--accent2);display:flex;align-items:center;gap:8px;">
-        <span>✅ API key activa</span>
-        <button onclick="clearApiKeyInline()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:9px;cursor:pointer;padding:0;letter-spacing:.05em;">Cambiar</button>
-      </div>
-    </div>
-    <div id="apikey-input-row">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.6;">Necesitas una API key de <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent2);">console.anthropic.com</a> para usar la IA. Carga $5 y crea una key que empiece con <code style="color:var(--accent);font-size:10px;">sk-ant-</code></div>
-      <div style="display:flex;gap:7px;margin-bottom:8px;">
-        <input type="password" id="apikey-inp-inline" placeholder="sk-ant-api03-..." style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:8px 10px;border-radius:8px;outline:none;" oninput="syncApiKeyInputs(this.value)" />
-        <button onclick="saveApiKeyInline()" style="background:rgba(200,245,66,.12);border:1px solid rgba(200,245,66,.3);color:var(--accent);font-family:var(--font-mono);font-size:10px;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;">✓ Guardar</button>
-      </div>
-      <button onclick="testApiKeyInline()" style="width:100%;background:rgba(66,245,200,.07);border:1px solid rgba(66,245,200,.2);color:var(--accent2);font-family:var(--font-mono);font-size:9px;padding:7px;border-radius:8px;cursor:pointer;letter-spacing:.04em;">🧪 Probar conexión</button>
-      <div id="apikey-test-result-inline" style="display:none;font-size:10px;margin-top:7px;padding:6px 10px;border-radius:7px;background:var(--surface2);font-family:var(--font-mono);"></div>
-    </div>
-  </div>
-</div>
 
 <!-- ====== FIN DEL DÍA ====== -->
 <div style="margin:40px 0 0;padding:28px 20px;background:linear-gradient(135deg,rgba(10,8,20,0.9),rgba(6,6,15,0.95));border-top:1px solid rgba(167,139,250,0.15);border-bottom:1px solid rgba(167,139,250,0.15);text-align:center;position:relative;overflow:hidden;">
@@ -2191,16 +2198,23 @@ setTimeout(initScenes, 100);
   ];
   let idx = Math.floor(Math.random() * frases.length);
   const el = document.getElementById('motiv-text');
-  if(!el) return;
-  el.textContent = frases[idx];
-  setInterval(function(){
+  function setFrase(i){
+    if(!el) return;
     el.style.opacity = '0';
     setTimeout(function(){
-      idx = (idx + 1) % frases.length;
-      el.textContent = frases[idx];
+      el.textContent = frases[i];
       el.style.opacity = '1';
-    }, 600);
-  }, 7000);
+    }, 300);
+  }
+  if(el) el.textContent = frases[idx];
+  window.nextMotivFrase = function(){
+    idx = (idx + 1) % frases.length;
+    setFrase(idx);
+  };
+  setInterval(function(){
+    idx = (idx + 1) % frases.length;
+    setFrase(idx);
+  }, 8000);
 })();
 
 // ===== FONDOS ANIMADOS (nubes / estrellas parpadeando) =====
@@ -2587,7 +2601,13 @@ async function testApiKeyInline(){
   }
 }
 // Inicializar UI de API key al cargar
-document.addEventListener('DOMContentLoaded', function(){ refreshApiKeyUI(); });
+document.addEventListener('DOMContentLoaded', function(){
+  refreshApiKeyUI();
+  // mostrar wrap si inicia en resumen (mobile)
+  const tab = document.body.getAttribute('data-tab') || 'resumen';
+  const apiwrap = document.getElementById('apikey-inline-wrap');
+  if(apiwrap) apiwrap.style.display = tab==='resumen' ? 'block' : 'none';
+});
 
 
 // ===== CRIPTO =====
@@ -2820,28 +2840,28 @@ async function genNews(){
   btn.disabled=true;
   const g=id=>document.getElementById(id).textContent;
   try{
-    const raw=await askIA(`Eres analista de criptomonedas. Mercado: BTC ${g('btc-p')} (${g('btc-c')}), ETH ${g('eth-p')} (${g('eth-c')}), SOL ${g('sol-p')} (${g('sol-c')}). Genera 4 titulares de noticias realistas sobre cripto. Temas: regulación, ETFs, adopción, hackeos, macroeconomía. Para cada noticia incluye una URL real de un sitio de noticias cripto (coindesk.com, cointelegraph.com, decrypt.co, theblock.co, bitcoinmagazine.com). Responde SOLO en JSON válido puro sin bloques de código ni texto extra. Formato exacto: [{"headline":"titular corto","impact":"bullish","time":"hace 2h","url":"https://coindesk.com"},{"headline":"otro titular","impact":"bearish","time":"hace 4h","url":"https://cointelegraph.com"},{"headline":"otro titular","impact":"neutral","time":"hace 6h","url":"https://decrypt.co"},{"headline":"otro titular","impact":"bullish","time":"hace 8h","url":"https://theblock.co"}]`,900);
-    // Try to extract JSON array even if there's extra text
+    const raw=await askIA(`Eres analista de criptomonedas. Mercado actual: BTC ${g('btc-p')} (${g('btc-c')}), ETH ${g('eth-p')} (${g('eth-c')}), SOL ${g('sol-p')} (${g('sol-c')}). Genera 4 titulares de noticias realistas y creíbles sobre cripto de hoy. Temas variados: regulación, ETFs, adopción institucional, hackeos, macroeconomía, DeFi. Para cada noticia indica la fuente más probable (solo el dominio sin https). Responde SOLO JSON puro sin bloques de código ni texto extra. Formato: [{"headline":"titular en español máx 12 palabras","impact":"bullish","time":"hace 2h","source":"coindesk.com"},{"headline":"otro titular","impact":"bearish","time":"hace 4h","source":"cointelegraph.com"},{"headline":"otro","impact":"neutral","time":"hace 6h","source":"decrypt.co"},{"headline":"otro","impact":"bullish","time":"hace 8h","source":"theblock.co"}]`,900);
     const jsonMatch = raw.match(/\[[\s\S]*\]/);
     if(!jsonMatch) throw new Error('NO_JSON');
     const items=JSON.parse(jsonMatch[0]);
     if(!Array.isArray(items)||items.length===0) throw new Error('EMPTY');
     list.innerHTML='';
     items.forEach(item=>{
+      const src = (item.source||'coindesk.com').replace(/https?:\/\//,'').split('/')[0];
       const el=document.createElement('a');
       el.className='news-item';
-      el.href = item.url || 'https://coindesk.com';
+      el.href = 'https://' + src;
       el.target = '_blank';
       el.rel = 'noopener noreferrer';
-      el.style.cssText = 'display:block;text-decoration:none;cursor:pointer;';
+      el.style.cssText = 'display:block;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;';
       const ic=item.impact==='bullish'?'📈 Alcista':item.impact==='bearish'?'📉 Bajista':'➡️ Neutral';
       const cls=item.impact==='bullish'?'bull':item.impact==='bearish'?'bear':'neut';
-      el.innerHTML=`<div class="news-hl" style="color:var(--text);">${item.headline}</div><div class="news-meta"><span class="impact ${cls}">${ic}</span><span class="news-t">${item.time}</span><span style="margin-left:auto;font-size:8px;color:var(--muted);opacity:0.6;">↗</span></div>`;
+      el.innerHTML=`<div class="news-hl" style="color:var(--text);">${item.headline}</div><div class="news-meta"><span class="impact ${cls}">${ic}</span><span class="news-t">${item.time}</span><span style="margin-left:auto;font-size:8px;color:var(--muted);opacity:0.7;">${src} ↗</span></div>`;
       list.appendChild(el);
     });
   }catch(e){
     if(e.message==='NO_API_KEY'){
-      list.innerHTML='<div class="news-loading">🔑 <strong>Necesitas tu API key</strong> para ver noticias IA. Ingrésa la abajo.</div>';
+      list.innerHTML='<div class="news-loading">🔑 <strong>Necesitas tu API key</strong> para ver noticias IA. Ingrésala en la pestaña Resumen.</div>';
     }else{
       list.innerHTML=`<div class="news-loading">⚠️ Error generando noticias. <button class="btn-xs" onclick="genNews()" style="margin-top:6px;">Reintentar</button></div>`;
     }
@@ -6817,10 +6837,20 @@ function mobTab(tab){
     const btn = document.getElementById('mobtab-'+t);
     if(btn) btn.classList.toggle('act', t===tab);
   });
+  // Mostrar API key card solo en tab resumen
+  const apiwrap = document.getElementById('apikey-inline-wrap');
+  if(apiwrap) apiwrap.style.display = tab==='resumen' ? 'block' : 'none';
   window.scrollTo({top:0, behavior:'auto'});
 }
 // Init on mobile
-if(isMobile()) mobTab('resumen');
+if(isMobile()){
+  mobTab('resumen');
+  // asegurar que el wrap de api key se muestre al inicio
+  setTimeout(function(){
+    const apiwrap = document.getElementById('apikey-inline-wrap');
+    if(apiwrap) apiwrap.style.display = 'block';
+  }, 100);
+}
 window.addEventListener('resize', function(){
   if(!isMobile()){
     document.body.removeAttribute('data-tab');
