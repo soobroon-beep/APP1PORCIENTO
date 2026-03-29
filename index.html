@@ -995,7 +995,7 @@ body.sky-night::before{background:
   <div class="row row-2" id="row-news-discord">
     <div class="card" id="card-noticias">
       <div class="lbl" style="--dot-color:var(--accent3)"><span style="width:5px;height:5px;border-radius:50%;background:var(--accent3);display:inline-block;margin-right:7px;flex-shrink:0;"></span>📰 Noticias — IA</div>
-      <div class="news-list" id="news-list"><div class="news-loading"><span class="spin">⟳</span> Generando noticias…</div></div>
+      <div class="news-list" id="news-list"><div class="news-loading" style="color:var(--muted);">Toca <strong style="color:var(--text);">Actualizar noticias</strong> para generar con IA.</div></div>
       <div style="margin-top:10px;"><button class="btn-xs" id="btn-news" onclick="genNews()" style="width:100%;justify-content:center;">✦ Actualizar noticias</button></div>
     </div>
     <div class="card" id="card-discord">
@@ -1191,6 +1191,34 @@ body.sky-night::before{background:
 </div>
 
 
+
+<!-- ====== API KEY INLINE ====== -->
+<div class="section" id="apikey-section-inline">
+  <div class="card" style="padding:16px 16px 14px;" id="apikey-card-inline">
+    <div style="font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px;justify-content:space-between;">
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--accent2);display:inline-block;"></span>
+        🔑 API Key — Claude IA
+      </span>
+      <span id="apikey-status-badge" style="font-size:8px;padding:2px 8px;border-radius:99px;background:rgba(245,66,66,.12);border:1px solid rgba(245,66,66,.3);color:#f08080;">Sin key</span>
+    </div>
+    <div id="apikey-saved-row" style="display:none;margin-bottom:10px;">
+      <div style="background:rgba(66,245,200,.06);border:1px solid rgba(66,245,200,.2);border-radius:8px;padding:8px 12px;font-size:10px;color:var(--accent2);display:flex;align-items:center;gap:8px;">
+        <span>✅ API key activa</span>
+        <button onclick="clearApiKeyInline()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:9px;cursor:pointer;padding:0;letter-spacing:.05em;">Cambiar</button>
+      </div>
+    </div>
+    <div id="apikey-input-row">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.6;">Necesitas una API key de <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent2);">console.anthropic.com</a> para usar la IA. Carga $5 y crea una key que empiece con <code style="color:var(--accent);font-size:10px;">sk-ant-</code></div>
+      <div style="display:flex;gap:7px;margin-bottom:8px;">
+        <input type="password" id="apikey-inp-inline" placeholder="sk-ant-api03-..." style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:8px 10px;border-radius:8px;outline:none;" oninput="syncApiKeyInputs(this.value)" />
+        <button onclick="saveApiKeyInline()" style="background:rgba(200,245,66,.12);border:1px solid rgba(200,245,66,.3);color:var(--accent);font-family:var(--font-mono);font-size:10px;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;">✓ Guardar</button>
+      </div>
+      <button onclick="testApiKeyInline()" style="width:100%;background:rgba(66,245,200,.07);border:1px solid rgba(66,245,200,.2);color:var(--accent2);font-family:var(--font-mono);font-size:9px;padding:7px;border-radius:8px;cursor:pointer;letter-spacing:.04em;">🧪 Probar conexión</button>
+      <div id="apikey-test-result-inline" style="display:none;font-size:10px;margin-top:7px;padding:6px 10px;border-radius:7px;background:var(--surface2);font-family:var(--font-mono);"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ====== FIN DEL DÍA ====== -->
 <div style="margin:40px 0 0;padding:28px 20px;background:linear-gradient(135deg,rgba(10,8,20,0.9),rgba(6,6,15,0.95));border-top:1px solid rgba(167,139,250,0.15);border-bottom:1px solid rgba(167,139,250,0.15);text-align:center;position:relative;overflow:hidden;">
@@ -2470,7 +2498,96 @@ async function testApiKey(){
   }
 }
 
-if(!getApiKey()) setTimeout(()=>{ document.getElementById('api-banner').style.display='flex'; }, 800);
+// API banner se muestra solo cuando el usuario intenta usar IA sin key
+
+// ===== API KEY INLINE (sección fija en el fondo de la página) =====
+function syncApiKeyInputs(val){
+  const inp = document.getElementById('api-key-inp');
+  if(inp) inp.value = val;
+}
+function refreshApiKeyUI(){
+  const key = getApiKey();
+  const badge = document.getElementById('apikey-status-badge');
+  const savedRow = document.getElementById('apikey-saved-row');
+  const inputRow = document.getElementById('apikey-input-row');
+  if(!badge) return;
+  if(key){
+    badge.textContent = '✅ Activa';
+    badge.style.background = 'rgba(66,245,200,.12)';
+    badge.style.borderColor = 'rgba(66,245,200,.3)';
+    badge.style.color = 'var(--accent2)';
+    if(savedRow) savedRow.style.display = 'block';
+    if(inputRow) inputRow.style.display = 'none';
+  } else {
+    badge.textContent = 'Sin key';
+    badge.style.background = 'rgba(245,66,66,.12)';
+    badge.style.borderColor = 'rgba(245,66,66,.3)';
+    badge.style.color = '#f08080';
+    if(savedRow) savedRow.style.display = 'none';
+    if(inputRow) inputRow.style.display = 'block';
+  }
+}
+function saveApiKeyInline(){
+  const v = document.getElementById('apikey-inp-inline').value.trim();
+  if(!v) return;
+  localStorage.setItem('claude_api_key', v);
+  // sync hidden inputs
+  const inp = document.getElementById('api-key-inp');
+  if(inp) inp.value = v;
+  refreshApiKeyUI();
+}
+function clearApiKeyInline(){
+  const savedRow = document.getElementById('apikey-saved-row');
+  const inputRow = document.getElementById('apikey-input-row');
+  if(savedRow) savedRow.style.display = 'none';
+  if(inputRow) inputRow.style.display = 'block';
+  const inp = document.getElementById('apikey-inp-inline');
+  if(inp){ inp.value = ''; inp.focus(); }
+}
+async function testApiKeyInline(){
+  const inpEl = document.getElementById('apikey-inp-inline');
+  const inputKey = inpEl ? inpEl.value.trim() : '';
+  if(inputKey) localStorage.setItem('claude_api_key', inputKey);
+  const resultBox = document.getElementById('apikey-test-result-inline');
+  resultBox.style.display = 'block';
+  resultBox.style.color = '#aaa';
+  resultBox.textContent = '🧪 Probando conexión con Claude…';
+  try {
+    const key = getApiKey();
+    if(!key){ resultBox.textContent='❌ No hay API key guardada.'; resultBox.style.color='#f54242'; return; }
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens: 20,
+        messages:[{role:'user', content:'Di solo "OK" en español.'}]
+      })
+    });
+    const data = await resp.json();
+    if(!resp.ok){
+      const errMsg = data?.error?.message || 'Error desconocido';
+      resultBox.textContent = `❌ Error HTTP ${resp.status}: ${errMsg}`;
+      resultBox.style.color = '#f54242';
+    } else {
+      const text = data?.content?.[0]?.text || '(sin respuesta)';
+      resultBox.textContent = `✅ ¡Funciona! Respuesta: "${text.trim()}"`;
+      resultBox.style.color = '#c8f542';
+      refreshApiKeyUI();
+      setTimeout(()=>{ resultBox.style.display='none'; }, 5000);
+    }
+  } catch(err) {
+    resultBox.textContent = `❌ Error de red: ${err.message}`;
+    resultBox.style.color = '#f54242';
+  }
+}
+// Inicializar UI de API key al cargar
+document.addEventListener('DOMContentLoaded', function(){ refreshApiKeyUI(); });
 
 
 // ===== CRIPTO =====
@@ -2703,7 +2820,7 @@ async function genNews(){
   btn.disabled=true;
   const g=id=>document.getElementById(id).textContent;
   try{
-    const raw=await askIA(`Eres analista de criptomonedas. Mercado: BTC ${g('btc-p')} (${g('btc-c')}), ETH ${g('eth-p')} (${g('eth-c')}), SOL ${g('sol-p')} (${g('sol-c')}). Genera 4 titulares de noticias realistas sobre cripto. Temas: regulación, ETFs, adopción, hackeos, macroeconomía. Responde SOLO en JSON válido puro sin bloques de código ni texto extra. Formato exacto: [{"headline":"titular corto","impact":"bullish","time":"hace 2h"},{"headline":"otro titular","impact":"bearish","time":"hace 4h"},{"headline":"otro titular","impact":"neutral","time":"hace 6h"},{"headline":"otro titular","impact":"bullish","time":"hace 8h"}]`,800);
+    const raw=await askIA(`Eres analista de criptomonedas. Mercado: BTC ${g('btc-p')} (${g('btc-c')}), ETH ${g('eth-p')} (${g('eth-c')}), SOL ${g('sol-p')} (${g('sol-c')}). Genera 4 titulares de noticias realistas sobre cripto. Temas: regulación, ETFs, adopción, hackeos, macroeconomía. Para cada noticia incluye una URL real de un sitio de noticias cripto (coindesk.com, cointelegraph.com, decrypt.co, theblock.co, bitcoinmagazine.com). Responde SOLO en JSON válido puro sin bloques de código ni texto extra. Formato exacto: [{"headline":"titular corto","impact":"bullish","time":"hace 2h","url":"https://coindesk.com"},{"headline":"otro titular","impact":"bearish","time":"hace 4h","url":"https://cointelegraph.com"},{"headline":"otro titular","impact":"neutral","time":"hace 6h","url":"https://decrypt.co"},{"headline":"otro titular","impact":"bullish","time":"hace 8h","url":"https://theblock.co"}]`,900);
     // Try to extract JSON array even if there's extra text
     const jsonMatch = raw.match(/\[[\s\S]*\]/);
     if(!jsonMatch) throw new Error('NO_JSON');
@@ -2711,16 +2828,20 @@ async function genNews(){
     if(!Array.isArray(items)||items.length===0) throw new Error('EMPTY');
     list.innerHTML='';
     items.forEach(item=>{
-      const el=document.createElement('div');el.className='news-item';
+      const el=document.createElement('a');
+      el.className='news-item';
+      el.href = item.url || 'https://coindesk.com';
+      el.target = '_blank';
+      el.rel = 'noopener noreferrer';
+      el.style.cssText = 'display:block;text-decoration:none;cursor:pointer;';
       const ic=item.impact==='bullish'?'📈 Alcista':item.impact==='bearish'?'📉 Bajista':'➡️ Neutral';
       const cls=item.impact==='bullish'?'bull':item.impact==='bearish'?'bear':'neut';
-      el.innerHTML=`<div class="news-hl">${item.headline}</div><div class="news-meta"><span class="impact ${cls}">${ic}</span><span class="news-t">${item.time}</span></div>`;
+      el.innerHTML=`<div class="news-hl" style="color:var(--text);">${item.headline}</div><div class="news-meta"><span class="impact ${cls}">${ic}</span><span class="news-t">${item.time}</span><span style="margin-left:auto;font-size:8px;color:var(--muted);opacity:0.6;">↗</span></div>`;
       list.appendChild(el);
     });
   }catch(e){
     if(e.message==='NO_API_KEY'){
-      list.innerHTML='<div class="news-loading">🔑 <strong>Necesitas tu API key de Gemini</strong> para ver noticias IA. Ingresa tu key en el banner superior.</div>';
-      document.getElementById('api-banner').style.display='flex';
+      list.innerHTML='<div class="news-loading">🔑 <strong>Necesitas tu API key</strong> para ver noticias IA. Ingrésa la abajo.</div>';
     }else{
       list.innerHTML=`<div class="news-loading">⚠️ Error generando noticias. <button class="btn-xs" onclick="genNews()" style="margin-top:6px;">Reintentar</button></div>`;
     }
@@ -6014,22 +6135,34 @@ function fmtPendientes(proy){
 }
 
 // ── Render de todos los proyectos ──
+let _isDraggingProy = false; // flag global para suprimir re-render durante drag
+
 function renderProyectos(){
+  if(_isDraggingProy) return; // no redibujar mientras se arrastra
   const grid = document.getElementById('proyectos-grid');
   const vacio = document.getElementById('proyectos-vacio');
-  grid.innerHTML = '';
+  if(!grid) return;
+
   if(!proyectos || proyectos.length === 0){
+    grid.innerHTML = '';
     vacio.style.display = 'block';
     return;
   }
   vacio.style.display = 'none';
+
+  // Construir en fragment para evitar reflows múltiples
+  const frag = document.createDocumentFragment();
   proyectos.forEach(p => {
     if(p.tipo === 'separador'){
-      grid.appendChild(buildSeparadorEl(p));
+      frag.appendChild(buildSeparadorEl(p));
     } else {
-      grid.appendChild(buildProyCard(p));
+      frag.appendChild(buildProyCard(p));
     }
   });
+
+  // Reemplazar contenido en un solo golpe
+  grid.innerHTML = '';
+  grid.appendChild(frag);
 }
 
 // ── Construir tarjeta de un proyecto ──
@@ -6097,6 +6230,7 @@ function attachItemDrag(card, itemId, labelText, handleEl){
     const t0 = e.touches[0];
     _lpTimer = setTimeout(function(){
       _dragging = true;
+      _isDraggingProy = true; // suprimir re-renders durante drag
       if(navigator.vibrate) navigator.vibrate(40);
       card.style.opacity = '0.45';
       card.style.transform = 'scale(1.02)';
@@ -6131,6 +6265,7 @@ function attachItemDrag(card, itemId, labelText, handleEl){
     if(_ghost){ document.body.removeChild(_ghost); _ghost = null; }
     card.style.opacity = '1';
     card.style.transform = '';
+    _isDraggingProy = false; // liberar flag
     if(!_dragging){ _dragging = false; return; }
     _dragging = false;
 
@@ -6147,6 +6282,7 @@ function attachItemDrag(card, itemId, labelText, handleEl){
     if(!handleEl && (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     e.preventDefault();
     _dragging = true;
+    _isDraggingProy = true; // suprimir re-renders durante drag
     card.style.opacity = '0.45';
     card.style.cursor = 'grabbing';
     _ghost = document.createElement('div');
@@ -6176,6 +6312,7 @@ function attachItemDrag(card, itemId, labelText, handleEl){
       if(_ghost){ document.body.removeChild(_ghost); _ghost = null; }
       card.style.opacity = '1';
       card.style.cursor = '';
+      _isDraggingProy = false; // liberar flag
       if(!_dragging){ _dragging = false; return; }
       _dragging = false;
       const over = getItemUnder(ev.clientX, ev.clientY);
