@@ -447,17 +447,6 @@ body.sky-night::before{background:
 .cal-day.today{color:var(--accent);font-weight:700;border:1px solid rgba(200,245,66,.3);background:rgba(200,245,66,.06);}
 .cal-day.has-data{cursor:pointer;}
 .cal-day.has-data:hover{filter:brightness(1.2);transform:scale(1.08);transition:all .15s;}
-
-/* Widget proyectos compacto */
-.pw-item{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s;user-select:none;}
-.pw-item:hover{border-color:var(--accent2);background:rgba(66,245,200,.04);}
-.pw-item.pw-done{opacity:.5;background:rgba(200,245,66,.03);border-color:rgba(200,245,66,.15);}
-.pw-item.pw-done .pw-task-name{text-decoration:line-through;color:var(--muted);}
-.pw-cb{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-.pw-item.pw-done .pw-cb{background:var(--accent);border-color:var(--accent);}
-.pw-proj-name{font-size:9px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
-.pw-task-name{font-size:11px;color:var(--text);font-family:var(--font-mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.pw-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .cal-day.full{background:rgba(200,245,66,.14);color:var(--accent);font-weight:600;}
 .cal-day.partial{background:rgba(245,167,66,.1);color:var(--accent3);}
 .cal-day.zero{background:rgba(245,66,66,.06);color:rgba(245,66,66,.5);}
@@ -1354,18 +1343,6 @@ body.sky-night::before{background:
   <div class="tl-time" style="font-size:20px;color:var(--accent2);">Proyectos</div>
   <div class="tl-desc"><strong>Tablero de proyectos</strong><span>Pendientes · Progreso · Notas</span></div>
   <div class="tl-line"></div>
-</div>
-
-<!-- WIDGET COMPACTO DE PROYECTOS -->
-<div id="proj-widget" style="margin-top:14px;margin-bottom:4px;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-    <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;">📌 Tareas rápidas</span>
-    <button onclick="toggleProjWidget()" id="proj-widget-toggle" style="background:none;border:none;color:var(--muted);font-size:9px;font-family:var(--font-mono);cursor:pointer;letter-spacing:.06em;padding:2px 6px;">ocultar ▲</button>
-  </div>
-  <div id="proj-widget-body">
-    <div id="proj-widget-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-    <div id="proj-widget-empty" style="display:none;text-align:center;padding:14px;color:var(--muted);font-size:10px;">No hay tareas pendientes en proyectos.</div>
-  </div>
 </div>
 
 <div class="section" style="margin-top:18px;">
@@ -5943,7 +5920,6 @@ db.collection("appData").doc("proyectos").onSnapshot((doc) => {
     proyectos = nuevos;
     _proyInitialized = true;
     renderProyectos();
-    renderProjWidget(); // ← widget compacto inicial
   } else {
     // Solo sincronizar datos sin re-renderizar (evita cerrar tarjetas abiertas)
     proyectos = nuevos;
@@ -5958,7 +5934,6 @@ db.collection("appData").doc("proyectos").onSnapshot((doc) => {
         pctEl.style.color = calcPendientes(p) === 0 ? '#22d3a0' : 'var(--accent3)';
       }
     });
-    renderProjWidget(); // ← actualizar widget al cambiar datos
   }
 });
 
@@ -6020,7 +5995,6 @@ function crearProyecto(){
   if(vacio) vacio.style.display = 'none';
   saveProyectos();
   cerrarModalProyecto();
-  renderProjWidget(); // actualizar widget compacto
 }
 
 // ── Calcular pendientes de un proyecto ──
@@ -6530,7 +6504,6 @@ function toggleTareaProy(proyId, idx){
   p.tareas[idx].done = !p.tareas[idx].done;
   _actualizarCardTareas(proyId);   // actualiza DOM primero
   saveProyectos();                  // luego guarda (no re-renderiza por _proyInitialized)
-  renderProjWidget();               // sincronizar widget compacto
 }
 
 // ── Agregar tarea ──
@@ -6545,7 +6518,6 @@ function addTareaProy(proyId){
   inp.value = '';
   _actualizarCardTareas(proyId);
   saveProyectos();
-  renderProjWidget();
 }
 
 // ── Borrar tarea (con confirmación) ──
@@ -6556,7 +6528,6 @@ function deleteTareaProy(proyId, idx){
   p.tareas.splice(idx, 1);
   _actualizarCardTareas(proyId);
   saveProyectos();
-  renderProjWidget();
 }
 
 // ── Eliminar proyecto ──
@@ -6568,91 +6539,9 @@ function eliminarProyecto(id){
   const vacio = document.getElementById('proyectos-vacio');
   if(vacio) vacio.style.display = proyectos.length === 0 ? 'block' : 'none';
   saveProyectos();
-  renderProjWidget(); // actualizar widget compacto
 }
 
 // ── SEPARADORES DE SECCIÓN ──────────────────────────────────────────────────
-// ── WIDGET COMPACTO DE PROYECTOS ──────────────────────────────────────────────
-let _projWidgetVisible = true;
-
-function toggleProjWidget(){
-  _projWidgetVisible = !_projWidgetVisible;
-  const body = document.getElementById('proj-widget-body');
-  const btn = document.getElementById('proj-widget-toggle');
-  if(body) body.style.display = _projWidgetVisible ? 'block' : 'none';
-  if(btn) btn.textContent = _projWidgetVisible ? 'ocultar ▲' : 'mostrar ▼';
-}
-
-function renderProjWidget(){
-  const list = document.getElementById('proj-widget-list');
-  const empty = document.getElementById('proj-widget-empty');
-  if(!list) return;
-  list.innerHTML = '';
-
-  // Recolectar todas las tareas pendientes de todos los proyectos
-  const pendientes = [];
-  proyectos.forEach(p => {
-    if(p.tipo === 'separador') return;
-    if(!p.tareas || p.tareas.length === 0) return;
-    p.tareas.forEach((t, idx) => {
-      pendientes.push({ proy: p, tarea: t, idx });
-    });
-  });
-
-  if(pendientes.length === 0){
-    if(empty) empty.style.display = 'block';
-    return;
-  }
-  if(empty) empty.style.display = 'none';
-
-  // Mostrar máximo 8 tareas (primero las pendientes, luego las done)
-  const sorted = [...pendientes.filter(x => !x.tarea.done), ...pendientes.filter(x => x.tarea.done)];
-  const shown = sorted.slice(0, 8);
-
-  shown.forEach(({ proy, tarea, idx }) => {
-    const col = proy.c || 'var(--accent2)';
-    const isDone = !!tarea.done;
-    const el = document.createElement('div');
-    el.className = 'pw-item' + (isDone ? ' pw-done' : '');
-    el.innerHTML = `
-      <div class="pw-dot" style="background:${col};opacity:${isDone?0.4:1};"></div>
-      <div class="pw-cb">${isDone ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#05050e" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</div>
-      <div style="flex:1;min-width:0;">
-        <div class="pw-proj-name">${proy.t || 'Proyecto'}</div>
-        <div class="pw-task-name">${tarea.texto}</div>
-      </div>
-    `;
-    el.addEventListener('click', function(){
-      toggleTareaWidget(proy.id, idx);
-    });
-    list.appendChild(el);
-  });
-
-  // Si hay más tareas, mostrar indicador
-  if(sorted.length > 8){
-    const more = document.createElement('div');
-    more.style.cssText = 'text-align:center;font-size:9px;color:var(--muted);padding:4px 0;letter-spacing:.06em;';
-    more.textContent = '+ ' + (sorted.length - 8) + ' tareas más — ver tablero completo ↓';
-    list.appendChild(more);
-  }
-}
-
-function toggleTareaWidget(proyId, idx){
-  const p = proyectos.find(x => x.id === proyId);
-  if(!p || !p.tareas[idx]) return;
-  p.tareas[idx].done = !p.tareas[idx].done;
-  renderProjWidget();         // actualizar widget
-  _actualizarCardTareas(proyId); // actualizar tarjeta completa si está abierta
-  saveProyectos();
-}
-
-// Enganchar al snapshot de proyectos para que el widget se actualice automáticamente
-function _initProjWidget(){
-  // Esperar a que proyectos esté listo y luego renderizar
-  setTimeout(renderProjWidget, 500);
-}
-_initProjWidget();
-
 function agregarSeparador(){
   const sep = {
     id: Date.now(),
