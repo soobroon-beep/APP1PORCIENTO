@@ -1994,11 +1994,11 @@ function drawHubSceneAnimated(canvas, phase) {
 // ── Tareas por día de la semana ──
 const TASKS_SEMANA = [
   {id:'mercado',   icon:'₿',  name:'Cripto',                 time:'8:00 AM',  color:'var(--accent2)'},
+  {id:'yt',        icon:'▶',  name:'Subir video YouTube',   time:'9:00 AM',  color:'var(--yt)', days:[1,2,3,4,5]},
   {id:'gym',       icon:'💪', name:'Ir al gym',             time:'11:00 AM', color:'var(--accent)'},
   {id:'contenido', icon:'📱', name:'Crear contenido',       time:'2:00 PM',  color:'var(--accent3)', days:[1]},
   {id:'redes',     icon:'✅', name:'Publicar en redes',     time:'2:30 PM',  color:'var(--accent3)', days:[1,3,5]},
   {id:'tatuajes',  icon:'🗓', name:'Tatuaje / Dibujo',      time:'3:00 PM',  color:'var(--accent3)'},
-  {id:'yt',        icon:'▶',  name:'Subir video YouTube',   time:'9:00 AM',  color:'var(--yt)', days:[1,2,3,4,5]},
   {id:'meditacion',icon:'🌙', name:'Meditación',            time:'11:00 PM', color:'var(--purple)'},
 ];
 
@@ -3271,45 +3271,105 @@ Genera un briefing de trading para el día de hoy. Responde SOLO JSON puro sin m
   if(btn) btn.disabled = false;
 }
 
-async function genNews(){
-  const list=document.getElementById('news-list'),btn=document.getElementById('btn-news');
-  list.innerHTML='<div class="news-loading"><span class="spin">⟳</span> Generando noticias…</div>';
-  btn.disabled=true;
-  const g=id=>document.getElementById(id).textContent;
-  try{
-    const raw=await askIA(`Eres analista de criptomonedas. Mercado: BTC ${g('btc-p')} (${g('btc-c')}), ETH ${g('eth-p')} (${g('eth-c')}), SOL ${g('sol-p')} (${g('sol-c')}). Genera 4 titulares de noticias realistas sobre cripto. Temas: regulación, ETFs, adopción, hackeos, macroeconomía. Para cada noticia incluye una URL real de un sitio de noticias cripto (coindesk.com, cointelegraph.com, decrypt.co, theblock.co, bitcoinmagazine.com). Responde SOLO en JSON válido puro sin bloques de código ni texto extra. Formato exacto: [{"headline":"titular corto","impact":"bullish","time":"hace 2h","url":"https://coindesk.com"},{"headline":"otro titular","impact":"bearish","time":"hace 4h","url":"https://cointelegraph.com"},{"headline":"otro titular","impact":"neutral","time":"hace 6h","url":"https://decrypt.co"},{"headline":"otro titular","impact":"bullish","time":"hace 8h","url":"https://theblock.co"}]`,900);
-    // Try to extract JSON array even if there's extra text
-    const jsonMatch = raw.match(/\[[\s\S]*\]/);
-    if(!jsonMatch) throw new Error('NO_JSON');
-    const items=JSON.parse(jsonMatch[0]);
-    if(!Array.isArray(items)||items.length===0) throw new Error('EMPTY');
-    list.innerHTML='';
-    items.forEach(item=>{
-      const el=document.createElement('a');
-      el.className='news-item';
-      el.href = item.url || 'https://coindesk.com';
-      el.target = '_blank';
-      el.rel = 'noopener noreferrer';
-      el.style.cssText = 'display:block;text-decoration:none;cursor:pointer;';
-      const ic=item.impact==='bullish'?'📈 Alcista':item.impact==='bearish'?'📉 Bajista':'➡️ Neutral';
-      const cls=item.impact==='bullish'?'bull':item.impact==='bearish'?'bear':'neut';
-      el.innerHTML=`<div class="news-hl" style="color:var(--text);">${item.headline}</div><div class="news-meta"><span class="impact ${cls}">${ic}</span><span class="news-t">${item.time}</span><span style="margin-left:auto;font-size:8px;color:var(--muted);opacity:0.6;">↗</span></div>`;
-      list.appendChild(el);
-    });
-  }catch(e){
-    if(e.message==='NO_API_KEY'){
-      list.innerHTML='<div class="news-loading">🔑 <strong>API key requerida.</strong> Guarda tu key en la sección de Resumen.</div>';
-    }else if(e.message==='INVALID_KEY'){
-      list.innerHTML='<div class="news-loading">❌ API key inválida. Verifica tu key en la sección de Resumen.</div>';
-    }else if(e.message==='RATE_LIMIT'){
-      list.innerHTML='<div class="news-loading">⏱ Límite de uso. Espera 1 minuto e intenta de nuevo.</div>';
-    }else if(e.message && e.message.startsWith('RED:')){
-      list.innerHTML='<div class="news-loading">📡 Sin conexión. Verifica tu red.</div>';
-    }else{
-      list.innerHTML=`<div class="news-loading">⚠️ ${e.message || 'Error'}. <button class="btn-xs" onclick="genNews()" style="margin-top:6px;">Reintentar</button></div>`;
+// ===== NOTICIAS CRIPTO — RSS real via proxy =====
+async function fetchCryptoNews() {
+  // Usamos CryptoPanic public API (sin auth, sin CORS issues)
+  const CRYPTOPANIC = 'https://cryptopanic.com/api/free/v1/posts/?auth_token=pub_0000000000000000000000000000000000000000&public=true&kind=news&currencies=BTC,ETH,SOL';
+  // Alternativa: RSS de Cointelegraph via allorigins CORS proxy
+  const CT_RSS = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://cointelegraph.com/rss');
+  const CD_RSS = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.coindesk.com/arc/outboundfeeds/rss/');
+
+  // Intentar CryptoPanic primero
+  try {
+    const r = await fetch(CT_RSS, {signal: AbortSignal.timeout(8000)});
+    const j = await r.json();
+    if(j.contents) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(j.contents, 'text/xml');
+      const items = Array.from(doc.querySelectorAll('item')).slice(0, 6);
+      if(items.length > 0) {
+        return items.map(item => {
+          const title = item.querySelector('title')?.textContent?.replace(/<!\[CDATA\[|\]\]>/g,'').trim() || '';
+          const link = item.querySelector('link')?.textContent?.trim() || 
+                       item.querySelector('guid')?.textContent?.trim() || 'https://cointelegraph.com';
+          const pubDate = item.querySelector('pubDate')?.textContent || '';
+          const date = pubDate ? new Date(pubDate) : new Date();
+          const diff = Math.round((Date.now() - date.getTime()) / 60000);
+          const timeStr = diff < 60 ? `hace ${diff}m` : diff < 1440 ? `hace ${Math.round(diff/60)}h` : `hace ${Math.round(diff/1440)}d`;
+          // Classify impact from title keywords
+          const t = title.toLowerCase();
+          const bullishWords = ['surge','rally','high','gain','bull','up','rise','record','adoption','approve','etf','launch'];
+          const bearishWords = ['crash','drop','fall','bear','down','hack','loss','ban','restrict','warning','collapse','fraud'];
+          let impact = 'neutral';
+          if(bullishWords.some(w => t.includes(w))) impact = 'bullish';
+          else if(bearishWords.some(w => t.includes(w))) impact = 'bearish';
+          return {headline: title, url: link, time: timeStr, impact, source: 'CoinTelegraph'};
+        });
+      }
     }
+  } catch(e) { console.log('CT RSS failed:', e.message); }
+
+  // Fallback: CoinDesk RSS
+  try {
+    const r = await fetch(CD_RSS, {signal: AbortSignal.timeout(8000)});
+    const j = await r.json();
+    if(j.contents) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(j.contents, 'text/xml');
+      const items = Array.from(doc.querySelectorAll('item')).slice(0, 6);
+      if(items.length > 0) {
+        return items.map(item => {
+          const title = item.querySelector('title')?.textContent?.replace(/<!\[CDATA\[|\]\]>/g,'').trim() || '';
+          const link = item.querySelector('link')?.textContent?.trim() ||
+                       item.querySelector('guid')?.textContent?.trim() || 'https://coindesk.com';
+          const pubDate = item.querySelector('pubDate')?.textContent || '';
+          const date = pubDate ? new Date(pubDate) : new Date();
+          const diff = Math.round((Date.now() - date.getTime()) / 60000);
+          const timeStr = diff < 60 ? `hace ${diff}m` : diff < 1440 ? `hace ${Math.round(diff/60)}h` : `hace ${Math.round(diff/1440)}d`;
+          const t = title.toLowerCase();
+          const bullishWords = ['surge','rally','high','gain','bull','up','rise','record','adoption','approve','etf','launch'];
+          const bearishWords = ['crash','drop','fall','bear','down','hack','loss','ban','restrict','warning','collapse','fraud'];
+          let impact = 'neutral';
+          if(bullishWords.some(w => t.includes(w))) impact = 'bullish';
+          else if(bearishWords.some(w => t.includes(w))) impact = 'bearish';
+          return {headline: title, url: link, time: timeStr, impact, source: 'CoinDesk'};
+        });
+      }
+    }
+  } catch(e) { console.log('CD RSS failed:', e.message); }
+
+  throw new Error('No se pudo obtener noticias. Verifica tu conexión.');
+}
+
+function renderNewsItems(items, list) {
+  list.innerHTML = '';
+  items.slice(0, 5).forEach((item, i) => {
+    const el = document.createElement('a');
+    el.className = 'news-item';
+    el.href = item.url;
+    el.target = '_blank';
+    el.rel = 'noopener noreferrer';
+    el.style.cssText = 'display:block;text-decoration:none;cursor:pointer;animation-delay:' + (i * 0.07) + 's';
+    const ic = item.impact === 'bullish' ? '📈 Alcista' : item.impact === 'bearish' ? '📉 Bajista' : '➡️ Neutral';
+    const cls = item.impact === 'bullish' ? 'bull' : item.impact === 'bearish' ? 'bear' : 'neut';
+    const src = item.source ? `<span style="margin-left:auto;font-size:8px;color:var(--muted);opacity:0.7;letter-spacing:.04em;">${item.source}</span>` : '';
+    el.innerHTML = `<div class="news-hl" style="color:var(--text);">${item.headline}</div><div class="news-meta"><span class="impact ${cls}">${ic}</span><span class="news-t">${item.time}</span>${src}<span style="font-size:10px;color:var(--muted);opacity:0.5;margin-left:4px;">↗</span></div>`;
+    list.appendChild(el);
+  });
+}
+
+async function genNews(){
+  const list = document.getElementById('news-list');
+  const btn = document.getElementById('btn-news');
+  list.innerHTML = '<div class="news-loading"><span class="spin">⟳</span> Cargando noticias reales…</div>';
+  btn.disabled = true;
+  try {
+    const items = await fetchCryptoNews();
+    renderNewsItems(items, list);
+  } catch(e) {
+    list.innerHTML = `<div class="news-loading">⚠️ ${e.message} <button class="btn-xs" onclick="genNews()" style="margin-top:6px;">Reintentar</button></div>`;
   }
-  btn.disabled=false;
+  btn.disabled = false;
 }
 // genNews() ya NO se llama automáticamente al cargar — solo al presionar el botón "Actualizar noticias"
 
