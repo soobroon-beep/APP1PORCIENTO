@@ -903,6 +903,156 @@ body > *{animation:fadeInUp .5s ease both;}
 @media (prefers-reduced-motion: reduce){
   *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
 }
+
+/* ===== ANIMACIONES EXTRA — NOTAS, PROYECTOS, VOZ, HUB ===== */
+
+/* Hub scene banner */
+#scene-hub{animation:fadeInDown .5s ease both;}
+
+/* Voz / mic button */
+#voz-btn{
+  transition:transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+#voz-btn:hover{transform:scale(1.07);box-shadow:0 0 24px rgba(200,245,66,0.25);}
+#voz-btn:active{transform:scale(0.95);}
+#voz-btn.grabando{animation:orb-glow 1.2s ease-in-out infinite;}
+
+/* Transcript / AI result boxes */
+#voz-transcript,#voz-result,#voz-classif{
+  animation:fadeInUp .4s ease both;
+  transition:opacity .3s ease;
+}
+
+/* Projects card */
+#project-list > *,
+#ideas-list > *,
+#saved-ideas-list > *{
+  animation:slideInRight .35s cubic-bezier(.2,.8,.3,1) both;
+  transition:transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+}
+#project-list > *:hover,
+#ideas-list > *:hover{transform:translateX(4px);}
+
+/* Notes / discord textarea */
+.discord-notes{transition:border-color .2s ease, box-shadow .2s ease;}
+.discord-notes:focus{box-shadow:0 0 0 2px rgba(88,101,242,0.18);}
+
+/* Streak dots Hub */
+#voz-streak > *{animation:fadeInUp .3s ease both;}
+#voz-streak > *:nth-child(1){animation-delay:.05s;}
+#voz-streak > *:nth-child(2){animation-delay:.1s;}
+#voz-streak > *:nth-child(3){animation-delay:.15s;}
+#voz-streak > *:nth-child(4){animation-delay:.2s;}
+#voz-streak > *:nth-child(5){animation-delay:.25s;}
+#voz-streak > *:nth-child(6){animation-delay:.3s;}
+#voz-streak > *:nth-child(7){animation-delay:.35s;}
+
+/* Meta items (growth goals) */
+.meta-item{
+  animation:fadeInLeft .4s cubic-bezier(.2,.8,.3,1) both;
+  transition:transform .18s ease, border-color .2s ease;
+}
+.meta-item:nth-child(1){animation-delay:.05s;}
+.meta-item:nth-child(2){animation-delay:.1s;}
+.meta-item:nth-child(3){animation-delay:.15s;}
+.meta-item:nth-child(4){animation-delay:.2s;}
+.meta-item:nth-child(5){animation-delay:.25s;}
+.meta-item:hover{transform:translateY(-2px);}
+
+/* Negocio KPIs */
+.negocio-kpi{
+  animation:scaleIn .4s cubic-bezier(.2,.8,.3,1) both;
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.negocio-kpi:nth-child(1){animation-delay:.05s;}
+.negocio-kpi:nth-child(2){animation-delay:.12s;}
+.negocio-kpi:nth-child(3){animation-delay:.19s;}
+.negocio-kpi:hover{transform:scale(1.03);box-shadow:0 4px 16px rgba(0,0,0,0.25);}
+
+/* Signal / indicator cards */
+.signal-card{animation:fadeInRight .4s ease both;transition:transform .18s ease;}
+.signal-card:hover{transform:translateY(-2px);}
+
+/* Inputs — all */
+input[type="text"], input[type="password"], textarea, .inp{
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+input[type="text"]:focus, input[type="password"]:focus, textarea:focus, .inp:focus{
+  box-shadow:0 0 0 2px rgba(200,245,66,0.12);
+}
+
+/* Add button (+ circle) */
+.btn-add{
+  transition:transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.btn-add:hover{transform:scale(1.12) rotate(8deg);box-shadow:0 4px 12px rgba(200,245,66,0.2);}
+.btn-add:active{transform:scale(0.92) rotate(0deg);}
+
+/* Day sub-nav tabs (Mañana/Tarde/Noche) */
+.mob-dia-btn{
+  position:relative;overflow:hidden;
+}
+.mob-dia-btn::after{
+  content:'';position:absolute;inset:0;background:var(--accent);
+  transform:scaleX(0);transform-origin:left;transition:transform .3s ease;
+  opacity:0.07;border-radius:inherit;
+}
+.mob-dia-btn.act::after{transform:scaleX(1);}
+
+/* Section reveal with stagger for hub */
+.mob-sec-crec .section:nth-child(1){animation-delay:.08s;}
+.mob-sec-crec .section:nth-child(2){animation-delay:.15s;}
+.mob-sec-crec .section:nth-child(3){animation-delay:.22s;}
+.mob-sec-crec .section:nth-child(4){animation-delay:.29s;}
+.mob-sec-crec .section:nth-child(5){animation-delay:.36s;}
+.mob-sec-crec .card{animation-delay:.05s;}
+
+/* TL items in hub */
+.mob-sec-crec .tl{animation:fadeInLeft .45s .1s ease both;}
+
+/* Hub mic pulse ring */
+@keyframes mic-ring{
+  0%{transform:scale(1);opacity:0.6;}
+  100%{transform:scale(2.2);opacity:0;}
+}
+#voz-btn.grabando::after{
+  content:'';
+  position:absolute;inset:0;border-radius:50%;
+  border:2px solid var(--accent);
+  animation:mic-ring 1.2s ease-out infinite;
+}
+
+/* Floating action glow on AI boxes */
+.ai-box{
+  transition:box-shadow .3s ease, border-color .3s ease;
+}
+.ai-box:hover{
+  box-shadow:0 4px 20px rgba(66,245,200,0.12);
+  border-color:rgba(66,245,200,0.2);
+}
+
+/* Negocio section */
+.negocio-card{animation:cardReveal .5s .05s cubic-bezier(.2,.8,.3,1) both;}
+
+/* Idea tags */
+.soc-tags span, .soc-tags div{
+  animation:fadeInUp .3s ease both;
+  transition:transform .15s ease, background .15s ease;
+}
+.soc-tags span:hover{transform:scale(1.08);}
+
+/* Progress fills in gym */
+.gym-prog .prog-fill{transition:width .7s cubic-bezier(.4,0,.2,1);}
+
+/* Ex-item check animation */
+.ex-item.done{animation:fadeInUp .3s ease both;}
+
+/* Cal days hover */
+.cal-day-has{transition:transform .15s ease;}
+.cal-day-has:hover{transform:scale(1.18);}
+
+/* News loading spin */
+.news-loading .spin{animation:spinSlow 1s linear infinite;display:inline-block;}
 </style>
   <script type="module" crossorigin src="./assets/index-D_xgawCY.js"></script>
 </head>
@@ -1441,7 +1591,11 @@ body > *{animation:fadeInUp .5s ease both;}
 
 <!-- ====== ZONA DE CRECIMIENTO ====== -->
 <div class="mob-sec mob-sec-crec" id="mob-sec-crec">
-<div style="margin-top:40px;padding:0 0 6px;">
+<div class="scene-banner" id="scene-hub" style="margin-bottom:14px;">
+  <canvas class="scene-canvas" id="scene-canvas-hub"></canvas>
+</div>
+
+<div style="margin-top:10px;padding:0 0 6px;">
   <div style="font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(200,245,66,0.4);text-align:center;margin-bottom:24px;font-family:var(--font-mono);">— voz · notas · proyectos —</div>
 </div>
 
@@ -1753,6 +1907,89 @@ function saveDiscordNotes() {
   if (el) db.collection("appData").doc("discord-notes").set({ texto: el.value });
 }
 
+
+function drawHubSceneAnimated(canvas, phase) {
+  if(!canvas) return;
+  const W = canvas.width || canvas.offsetWidth || window.innerWidth - 36;
+  const H = canvas.height || 120;
+  if(canvas.width !== W) { canvas.width = W; canvas.height = H; }
+  const ctx = canvas.getContext('2d');
+  // Background - deep space green/teal
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#02080e');
+  bg.addColorStop(0.5, '#051a12');
+  bg.addColorStop(1, '#030d08');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines (like a digital hub)
+  ctx.strokeStyle = 'rgba(200,245,66,0.06)';
+  ctx.lineWidth = 1;
+  const gridSize = 28;
+  const gridOff = (phase * 0.4) % gridSize;
+  for(let x = -gridSize + gridOff; x < W + gridSize; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for(let y = 0; y < H + gridSize; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Floating nodes
+  const nodes = [
+    {bx:W*0.15, by:H*0.35, r:3.5, speed:0.7, amp:8},
+    {bx:W*0.4,  by:H*0.6,  r:2.5, speed:1.1, amp:6},
+    {bx:W*0.65, by:H*0.28, r:4,   speed:0.5, amp:10},
+    {bx:W*0.82, by:H*0.65, r:3,   speed:0.9, amp:7},
+    {bx:W*0.55, by:H*0.45, r:5,   speed:0.6, amp:9},
+  ];
+  nodes.forEach(function(n) {
+    const x = n.bx + Math.sin(phase * n.speed) * n.amp;
+    const y = n.by + Math.cos(phase * n.speed * 0.7) * n.amp * 0.6;
+    // Connection lines between nodes
+    nodes.forEach(function(n2) {
+      const x2 = n2.bx + Math.sin(phase * n2.speed) * n2.amp;
+      const y2 = n2.by + Math.cos(phase * n2.speed * 0.7) * n2.amp * 0.6;
+      const dist = Math.hypot(x2-x, y2-y);
+      if(dist < W * 0.35) {
+        const alpha = (1 - dist / (W * 0.35)) * 0.18;
+        ctx.strokeStyle = `rgba(200,245,66,${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+    });
+    // Node glow
+    const grd = ctx.createRadialGradient(x, y, 0, x, y, n.r * 3.5);
+    grd.addColorStop(0, 'rgba(200,245,66,0.55)');
+    grd.addColorStop(1, 'rgba(200,245,66,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(x, y, n.r * 3.5, 0, Math.PI*2); ctx.fill();
+    // Node core
+    ctx.fillStyle = 'rgba(200,245,66,0.9)';
+    ctx.beginPath(); ctx.arc(x, y, n.r, 0, Math.PI*2); ctx.fill();
+  });
+
+  // Scan line
+  const scanX = ((phase * 18) % (W + 60)) - 30;
+  const scanGrad = ctx.createLinearGradient(scanX - 20, 0, scanX + 20, 0);
+  scanGrad.addColorStop(0, 'rgba(200,245,66,0)');
+  scanGrad.addColorStop(0.5, 'rgba(200,245,66,0.12)');
+  scanGrad.addColorStop(1, 'rgba(200,245,66,0)');
+  ctx.fillStyle = scanGrad;
+  ctx.fillRect(scanX - 20, 0, 40, H);
+
+  // "Hub" text
+  ctx.font = 'bold 42px "Syne", sans-serif';
+  ctx.fillStyle = 'rgba(200,245,66,0.75)';
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = 'rgba(200,245,66,0.5)';
+  ctx.fillText('Hub', W * 0.05, H * 0.72);
+  ctx.shadowBlur = 0;
+  ctx.font = '10px "DM Mono", monospace';
+  ctx.fillStyle = 'rgba(200,245,66,0.35)';
+  ctx.letterSpacing = '0.15em';
+  ctx.fillText('VOZ · NOTAS · PROYECTOS', W * 0.05, H * 0.87);
+}
+
 // ===== DAILY CHECKLIST + CALENDAR (FIREBASE) =====
 // ── Tareas por día de la semana ──
 const TASKS_SEMANA = [
@@ -1761,7 +1998,7 @@ const TASKS_SEMANA = [
   {id:'contenido', icon:'📱', name:'Crear contenido',       time:'2:00 PM',  color:'var(--accent3)', days:[1]},
   {id:'redes',     icon:'✅', name:'Publicar en redes',     time:'2:30 PM',  color:'var(--accent3)', days:[1,3,5]},
   {id:'tatuajes',  icon:'🗓', name:'Tatuaje / Dibujo',      time:'3:00 PM',  color:'var(--accent3)'},
-  {id:'yt',        icon:'▶',  name:'Subir video YouTube',   time:'9:00 AM',  color:'var(--yt)', days:[1]},
+  {id:'yt',        icon:'▶',  name:'Subir video YouTube',   time:'9:00 AM',  color:'var(--yt)', days:[1,2,3,4,5]},
   {id:'meditacion',icon:'🌙', name:'Meditación',            time:'11:00 PM', color:'var(--purple)'},
 ];
 
@@ -2410,7 +2647,7 @@ setTimeout(initScenes, 100);
   setInterval(function(){
     idx = (idx + 1) % frases.length;
     cambiar(idx);
-  }, 8000);
+  }, 300000);
 })();
 
 // ===== FONDOS ANIMADOS (nubes / estrellas parpadeando) =====
@@ -2444,12 +2681,21 @@ setTimeout(initScenes, 100);
     drawNightSceneAnimated(canvas, starPhase);
   }
 
+  let hubPhase = 0;
+  function animateHub(){
+    hubPhase += 0.025;
+    const canvas = document.getElementById('scene-canvas-hub');
+    if(!canvas || !canvas.getContext) return;
+    drawHubSceneAnimated(canvas, hubPhase);
+  }
+
   // Only animate the currently visible tab
   function animateVisible(){
     const tab = document.body.getAttribute('data-tab') || 'resumen';
     if(tab === 'manana') animateMorning();
     else if(tab === 'tarde') animateSunset();
     else if(tab === 'noche') { animateNight(); starPhase += 0; }
+    else if(tab === 'crec') animateHub();
     requestAnimationFrame(animateVisible);
   }
 
@@ -2458,6 +2704,7 @@ setTimeout(initScenes, 100);
     drawMorningSceneAnimated(document.getElementById('scene-canvas-morning'), 0);
     drawSunsetSceneAnimated(document.getElementById('scene-canvas-sunset'), 0);
     drawNightSceneAnimated(document.getElementById('scene-canvas-night'), 0);
+    drawHubSceneAnimated(document.getElementById('scene-canvas-hub'), 0);
     requestAnimationFrame(animateVisible);
   }, 200);
 })();
@@ -3051,9 +3298,15 @@ async function genNews(){
     });
   }catch(e){
     if(e.message==='NO_API_KEY'){
-      list.innerHTML='<div class="news-loading">🔑 <strong>Necesitas tu API key</strong> para ver noticias IA. Ingrésa la abajo.</div>';
+      list.innerHTML='<div class="news-loading">🔑 <strong>API key requerida.</strong> Guarda tu key en la sección de Resumen.</div>';
+    }else if(e.message==='INVALID_KEY'){
+      list.innerHTML='<div class="news-loading">❌ API key inválida. Verifica tu key en la sección de Resumen.</div>';
+    }else if(e.message==='RATE_LIMIT'){
+      list.innerHTML='<div class="news-loading">⏱ Límite de uso. Espera 1 minuto e intenta de nuevo.</div>';
+    }else if(e.message && e.message.startsWith('RED:')){
+      list.innerHTML='<div class="news-loading">📡 Sin conexión. Verifica tu red.</div>';
     }else{
-      list.innerHTML=`<div class="news-loading">⚠️ Error generando noticias. <button class="btn-xs" onclick="genNews()" style="margin-top:6px;">Reintentar</button></div>`;
+      list.innerHTML=`<div class="news-loading">⚠️ ${e.message || 'Error'}. <button class="btn-xs" onclick="genNews()" style="margin-top:6px;">Reintentar</button></div>`;
     }
   }
   btn.disabled=false;
