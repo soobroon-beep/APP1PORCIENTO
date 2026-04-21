@@ -7899,6 +7899,61 @@ function enviarNotifSW(titulo, cuerpo, tag){
   // Fallback: Notification API directa
   enviarNotif(titulo, cuerpo, tag);
 }
+  // ════ FIX: API KEY EN FIREBASE (funciona en cualquier dispositivo) ════
+// Reemplaza las funciones originales de localStorage por Firebase
+
+let _apiKeyCache = null; // cache en memoria para evitar lecturas lentas
+
+// Sobrescribir getApiKey para leer de Firebase
+const _origGetApiKey = window.getApiKey;
+window.getApiKey = function() {
+  return _apiKeyCache || localStorage.getItem('claude_api_key') || '';
+};
+
+// Cargar API key de Firebase al iniciar
+db.collection("appData").doc("config").onSnapshot(function(doc) {
+  if (doc.exists && doc.data().apiKey) {
+    _apiKeyCache = doc.data().apiKey;
+    localStorage.setItem('claude_api_key', _apiKeyCache); // sync local también
+    refreshApiKeyUI();
+    document.getElementById('api-banner').style.display = 'none';
+  }
+});
+
+// Sobrescribir saveApiKey para guardar en Firebase Y localStorage
+window.saveApiKey = function() {
+  const v = document.getElementById('api-key-inp').value.trim();
+  if (!v) return;
+  _apiKeyCache = v;
+  localStorage.setItem('claude_api_key', v);
+  db.collection("appData").doc("config").set({ apiKey: v }, { merge: true });
+  document.getElementById('api-banner').style.display = 'none';
+  refreshApiKeyUI();
+};
+
+// Sobrescribir saveApiKeyInline igual
+window.saveApiKeyInline = function() {
+  const v = document.getElementById('apikey-inp-inline').value.trim();
+  if (!v) return;
+  _apiKeyCache = v;
+  localStorage.setItem('claude_api_key', v);
+  db.collection("appData").doc("config").set({ apiKey: v }, { merge: true });
+  const inp = document.getElementById('api-key-inp');
+  if (inp) inp.value = v;
+  refreshApiKeyUI();
+};
+
+// Sobrescribir clearApiKeyInline
+window.clearApiKeyInline = function() {
+  const savedRow = document.getElementById('apikey-saved-row');
+  const inputRow = document.getElementById('apikey-input-row');
+  if (savedRow) savedRow.style.display = 'none';
+  if (inputRow) inputRow.style.display = 'block';
+  const inp = document.getElementById('apikey-inp-inline');
+  if (inp) { inp.value = ''; inp.focus(); }
+};
+// ════ FIN FIX ════
+
 </script>
 
 </body>
