@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="1%">
 
+<link rel="manifest" href="./manifest.json">
 <script>
 // Inyectar el logo original como ícono PWA (apple-touch-icon, favicon y manifest)
 (function(){
@@ -32,34 +33,7 @@
     fav.href = logoUrl;
     document.head.appendChild(fav);
 
-    // manifest PWA (Android Chrome)
-    var manifest = {
-      name: '1%',
-      short_name: '1%',
-      description: 'App 1%',
-      start_url: './',
-      scope: './',
-      display: 'standalone',
-      orientation: 'portrait',
-      background_color: '#05050e',
-      theme_color: '#05050e',
-      icons: [
-        { src: logoUrl, sizes: '72x72', type: 'image/png', purpose: 'any' },
-        { src: logoUrl, sizes: '96x96', type: 'image/png', purpose: 'any' },
-        { src: logoUrl, sizes: '128x128', type: 'image/png', purpose: 'any' },
-        { src: logoUrl, sizes: '144x144', type: 'image/png', purpose: 'any' },
-        { src: logoUrl, sizes: '152x152', type: 'image/png', purpose: 'any' },
-        { src: logoUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: logoUrl, sizes: '384x384', type: 'image/png', purpose: 'any' },
-        { src: logoUrl, sizes: '512x512', type: 'image/png', purpose: 'any' }
-      ]
-    };
-    var blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-    var mUrl = URL.createObjectURL(blob);
-    var mLink = document.createElement('link');
-    mLink.rel = 'manifest';
-    mLink.href = mUrl;
-    document.head.appendChild(mLink);
+    // manifest.json ya está enlazado en el <head> como archivo real
   } catch(e) { console.log('PWA icon error:', e); }
 })();
 </script>
@@ -7887,16 +7861,12 @@ if ('serviceWorker' in navigator) {
   var blob = new Blob([swCode], { type: 'application/javascript' });
   var swUrl = URL.createObjectURL(blob);
 
-  navigator.serviceWorker.register(swUrl).then(function(reg){
+  navigator.serviceWorker.register('./sw.js').then(function(reg){
     console.log('SW registrado:', reg.scope);
-    // Guardar referencia global al SW registration
     window._swReg = reg;
-    // Programar las notificaciones del día usando el SW
     setTimeout(programarNotificacionesSW, 2000);
   }).catch(function(e){
     console.log('SW error:', e);
-    // Intentar con /sw.js como fallback
-    navigator.serviceWorker.register('/sw.js').catch(function(){});
   });
 }
 
